@@ -1947,16 +1947,17 @@ function _onNetNodeClick(charId) {
 
 /* ── Relationship popup (create & edit) ── */
 function openRelPopupCreate(fromId, toId, canvas) {
-  _relPopup = { fromId, toId, relId: null, dir: 'both' };
   _showRelPopup(canvas, fromId, toId,
     `Connect: ${_getChar(fromId)?.name || '?'} & ${_getChar(toId)?.name || '?'}`, null);
+  // Set AFTER _showRelPopup so closeRelPopup() inside it doesn't clear us
+  _relPopup = { fromId, toId, relId: null, dir: 'both' };
 }
 function openRelPopupEdit(relId, canvas) {
   const rel = relationships.find(r => r.id === relId);
   if (!rel) return;
-  _relPopup = { fromId: rel.fromId, toId: rel.toId, relId, dir: rel.direction };
   _showRelPopup(canvas, rel.fromId, rel.toId,
     `Edit: ${_getChar(rel.fromId)?.name || '?'} ↔ ${_getChar(rel.toId)?.name || '?'}`, rel);
+  _relPopup = { fromId: rel.fromId, toId: rel.toId, relId, dir: rel.direction };
 }
 
 function _showRelPopup(canvas, fromId, toId, title, existingRel) {
