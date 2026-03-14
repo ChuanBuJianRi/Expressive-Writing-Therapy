@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>多智能体故事生成器</title>
+  <style>
+    /* ── 基础重置 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:       #0a0c14;
+      --bg-card:       #11141f;
+      --bg-card2:      #161a28;
+      --border:        #252a3d;
+      --border-light:  #2e3450;
+      --accent-gold:   #e8c56d;
+      --accent-blue:   #5b8dee;
+      --accent-purple: #9b6dff;
+      --accent-teal:   #3ec9a7;
+      --accent-rose:   #f06292;
+      --text-primary:  #e8eaf0;
+      --text-secondary:#8a91a8;
+      --text-muted:    #4a5068;
+      --glow-gold:     0 0 20px rgba(232,197,109,0.25);
+      --glow-blue:     0 0 20px rgba(91,141,238,0.3);
+      --glow-purple:   0 0 20px rgba(155,109,255,0.3);
+      --radius:        14px;
+      --radius-sm:     8px;
+    }
+
+    body {
+      font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 背景星尘 */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(91,141,238,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(155,109,255,0.07) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── 顶部导航 ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,12,20,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 700;
+      color: var(--accent-gold);
+      letter-spacing: 0.02em;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #e8c56d, #f0a030);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+    }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .badge {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(155,109,255,0.15);
+      color: var(--accent-purple);
+      border: 1px solid rgba(155,109,255,0.3);
+    }
+
+    /* ── 主布局 ── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1400px; margin: 0 auto;
+      padding: 32px 24px 80px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: auto auto 1fr;
+      gap: 24px;
+    }
+
+    /* ── 版块标题 ── */
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    /* ── 导演面板 ── */
+    .director-panel {
+      grid-column: 1;
+      grid-row: 1 / 3;
+    }
+    .director-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 24px;
+      position: relative; overflow: hidden;
+    }
+    .director-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent-gold), #f0a030, var(--accent-gold));
+    }
+    .director-avatar {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #e8c56d 0%, #c8860a 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 16px;
+      box-shadow: var(--glow-gold);
+      position: relative;
+    }
+    .director-avatar::after {
+      content: '导';
+      position: absolute; bottom: -2px; right: -2px;
+      width: 22px; height: 22px;
+      background: var(--accent-gold);
+      border-radius: 50%; border: 2px solid var(--bg-card);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; color: #0a0c14;
+      line-height: 18px; text-align: center;
+    }
+    .director-name {
+      font-size: 20px; font-weight: 700; color: var(--accent-gold);
+      margin-bottom: 4px;
+    }
+    .director-role {
+      font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      color: var(--text-muted); text-transform: uppercase;
+      display: block; margin-bottom: 6px;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: none;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 3px rgba(232,197,109,0.1);
+    }
+    .form-textarea { height: 90px; line-height: 1.6; }
+    .form-select option { background: var(--bg-card); }
+
+    .style-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .chip {
+      font-size: 11px; font-weight: 600; padding: 4px 12px;
+      border-radius: 20px; border: 1px solid var(--border);
+      color: var(--text-secondary); cursor: pointer;
+      transition: all 0.2s; user-select: none;
+      background: transparent;
+    }
+    .chip:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+    .chip.active {
+      background: rgba(232,197,109,0.12);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    /* ── 角色面板 ── */
+    .characters-panel {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .characters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    /* 角色颜色主题 */
+    .char-colors = [
+      { accent: '#5b8dee', glow: 'rgba(91,141,238,0.25)', gradient: 'linear-gradient(135deg,#5b8dee,#3a6fd8)' },
+    ];
+
+    .char-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      position: relative; overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .char-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-light);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .char-card[data-color="blue"]::before   { background: var(--accent-blue); }
+    .char-card[data-color="purple"]::before { background: var(--accent-purple); }
+    .char-card[data-color="teal"]::before   { background: var(--accent-teal); }
+    .char-card[data-color="rose"]::before   { background: var(--accent-rose); }
+    .char-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .char-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .char-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .char-card[data-color="blue"]   .char-avatar { background: rgba(91,141,238,0.2); }
+    .char-card[data-color="purple"] .char-avatar { background: rgba(155,109,255,0.2); }
+    .char-card[data-color="teal"]   .char-avatar { background: rgba(62,201,167,0.2); }
+    .char-card[data-color="rose"]   .char-avatar { background: rgba(240,98,146,0.2); }
+
+    .char-name-input {
+      background: transparent; border: none; border-bottom: 1px solid var(--border);
+      color: var(--text-primary); font-size: 14px; font-weight: 700;
+      width: 100%; padding: 2px 0;
+      font-family: inherit; outline: none;
+      transition: border-color 0.2s;
+    }
+    .char-name-input:focus { border-color: var(--accent-blue); }
+    .char-role-input {
+      background: transparent; border: none;
+      color: var(--text-secondary); font-size: 11px;
+      width: 100%; padding: 2px 0; font-family: inherit; outline: none;
+      margin-top: 2px;
+    }
+    .char-desc-input {
+      width: 100%; background: var(--bg-deep);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 10px; color: var(--text-secondary);
+      font-size: 12px; font-family: inherit;
+      height: 64px; resize: none; outline: none;
+      line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+    .char-desc-input:focus { border-color: var(--accent-blue); }
+
+    .char-card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px;
+    }
+    .char-status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-teal);
+      box-shadow: 0 0 6px rgba(62,201,167,0.6);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+    .btn-remove {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; line-height: 1;
+    }
+    .btn-remove:hover {
+      background: rgba(240,98,146,0.15);
+      border-color: var(--accent-rose);
+      color: var(--accent-rose);
+    }
+
+    /* 添加角色卡片 */
+    .add-char-card {
+      background: transparent;
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      min-height: 160px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; cursor: pointer;
+      transition: all 0.2s; color: var(--text-muted);
+    }
+    .add-char-card:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      background: rgba(91,141,238,0.04);
+    }
+    .add-char-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; transition: all 0.2s;
+    }
+    .add-char-card:hover .add-char-icon {
+      background: rgba(91,141,238,0.15);
+    }
+    .add-char-label { font-size: 12px; font-weight: 600; }
+
+    /* ── 控制栏 ── */
+    .control-bar {
+      grid-column: 2;
+      grid-row: 2;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .control-group { display: flex; align-items: center; gap: 8px; }
+    .control-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      color: var(--text-muted); text-transform: uppercase; white-space: nowrap;
+    }
+    .control-select {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: 13px;
+      padding: 7px 12px; font-family: inherit; outline: none;
+      transition: border-color 0.2s; cursor: pointer;
+    }
+    .control-select:focus { border-color: var(--accent-blue); }
+
+    .divider-v {
+      width: 1px; height: 32px;
+      background: var(--border); flex-shrink: 0;
+    }
+
+    .spacer { flex: 1; }
+
+    /* ── 按钮系统 ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      padding: 9px 18px; border-radius: var(--radius-sm);
+      border: none; cursor: pointer;
+      transition: all 0.2s; letter-spacing: 0.01em;
+      white-space: nowrap; user-select: none;
+    }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e8c56d, #d4a030);
+      color: #0a0c14;
+      box-shadow: 0 4px 16px rgba(232,197,109,0.3);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #f0d080, #e8c56d);
+      box-shadow: 0 6px 24px rgba(232,197,109,0.45);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); box-shadow: none; }
+
+    .btn-secondary {
+      background: rgba(91,141,238,0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(91,141,238,0.3);
+    }
+    .btn-secondary:hover {
+      background: rgba(91,141,238,0.2);
+      border-color: var(--accent-blue);
+      box-shadow: var(--glow-blue);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      background: var(--bg-card2);
+      color: var(--text-primary);
+      border-color: var(--border-light);
+    }
+
+    .btn-danger {
+      background: rgba(240,98,146,0.1);
+      color: var(--accent-rose);
+      border: 1px solid rgba(240,98,146,0.25);
+    }
+    .btn-danger:hover {
+      background: rgba(240,98,146,0.18);
+      border-color: var(--accent-rose);
+    }
+
+    .btn-lg { padding: 12px 28px; font-size: 14px; border-radius: 10px; }
+    .btn-sm { padding: 6px 13px; font-size: 12px; }
+
+    /* 生成按钮特效 */
+    .btn-generate {
+      position: relative; overflow: hidden;
+    }
+    .btn-generate::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+    .btn-generate:hover::after { transform: translateX(100%); }
+
+    /* ── 故事输出区 ── */
+    .story-panel {
+      grid-column: 1 / 3;
+      grid-row: 3;
+    }
+    .story-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .story-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .story-title {
+      font-size: 14px; font-weight: 700; color: var(--text-primary);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .story-actions { display: flex; gap: 8px; }
+
+    .tabs {
+      display: flex; gap: 2px;
+      background: var(--bg-deep); padding: 3px;
+      border-radius: var(--radius-sm);
+    }
+    .tab {
+      font-size: 12px; font-weight: 600; padding: 5px 14px;
+      border-radius: 6px; cursor: pointer;
+      color: var(--text-muted); border: none;
+      background: transparent; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--bg-card2);
+      color: var(--text-primary);
+    }
+    .tab:hover:not(.active) { color: var(--text-secondary); }
+
+    .story-body {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      min-height: 400px;
+    }
+
+    /* 故事文本 */
+    .story-text-area {
+      padding: 32px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto; max-height: 500px;
+      line-height: 1.9; color: var(--text-primary);
+      font-size: 15px;
+    }
+    .story-text-area::-webkit-scrollbar { width: 4px; }
+    .story-text-area::-webkit-scrollbar-track { background: transparent; }
+    .story-text-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .story-empty {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; min-height: 300px;
+      color: var(--text-muted); gap: 12px;
+      text-align: center;
+    }
+    .story-empty-icon { font-size: 48px; opacity: 0.4; }
+    .story-empty-text { font-size: 14px; }
+    .story-empty-hint { font-size: 12px; opacity: 0.6; }
+
+    /* 对话流面板 */
+    .agent-log {
+      overflow-y: auto; max-height: 500px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .agent-log::-webkit-scrollbar { width: 4px; }
+    .agent-log::-webkit-scrollbar-track { background: transparent; }
+    .agent-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .log-header {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--text-muted); text-transform: uppercase;
+      padding: 0 4px 8px; border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    .log-message {
+      background: var(--bg-card2);
+      border-radius: 10px; padding: 10px 12px;
+      border-left: 2px solid var(--border);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .log-message.director { border-left-color: var(--accent-gold); }
+    .log-message.char-blue { border-left-color: var(--accent-blue); }
+    .log-message.char-purple { border-left-color: var(--accent-purple); }
+    .log-message.char-teal { border-left-color: var(--accent-teal); }
+    .log-message.char-rose { border-left-color: var(--accent-rose); }
+
+    .log-sender {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .log-message.director .log-sender { color: var(--accent-gold); }
+    .log-message.char-blue .log-sender { color: var(--accent-blue); }
+    .log-message.char-purple .log-sender { color: var(--accent-purple); }
+    .log-message.char-teal .log-sender { color: var(--accent-teal); }
+    .log-message.char-rose .log-sender { color: var(--accent-rose); }
+
+    .log-content { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+    /* 加载动画 */
+    .typing-indicator {
+      display: flex; gap: 4px; padding: 4px 0;
+    }
+    .typing-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted);
+      animation: typing 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* 进度条 */
+    .progress-bar-wrap {
+      display: none;
+      padding: 0 24px 20px;
+      gap: 10px; align-items: center;
+    }
+    .progress-bar-wrap.visible { display: flex; }
+    .progress-bar {
+      flex: 1; height: 4px;
+      background: var(--border); border-radius: 4px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 4px; width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ── 统计栏 ── */
+    .stats-bar {
+      display: flex; gap: 24px; align-items: center;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-deep);
+    }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-value {
+      font-size: 18px; font-weight: 800; color: var(--text-primary);
+      line-height: 1;
+    }
+    .stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .stat-divider { width: 1px; height: 28px; background: var(--border); }
+
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      .director-panel { grid-column: 1; grid-row: auto; }
+      .characters-panel { grid-column: 1; grid-row: auto; }
+      .control-bar { grid-column: 1; grid-row: auto; }
+      .story-panel { grid-column: 1; grid-row: auto; }
+      .story-body { grid-template-columns: 1fr; }
+      .agent-log { border-top: 1px solid var(--border); max-height: 300px; }
+    }
+
+    /* ── 通知 Toast ── */
+    .toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column-reverse; gap: 8px;
+      z-index: 999;
+    }
+    .toast {
+      background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm); padding: 10px 16px;
+      font-size: 13px; color: var(--text-primary);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: toastIn 0.3s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .toast.success { border-left: 3px solid var(--accent-teal); }
+    .toast.error { border-left: 3px solid var(--accent-rose); }
+    .toast.info { border-left: 3px solid var(--accent-blue); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">✍️</div>
+    多智能体故事生成器
+  </div>
+  <div class="header-actions">
+    <span class="badge">Multi-Agent</span>
+    <button class="btn btn-ghost btn-sm" onclick="clearAll()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      清空
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="exportStory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      导出
+    </button>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- 导演面板 -->
+  <aside class="director-panel">
+    <div class="section-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+      导演智能体
+    </div>
+    <div class="director-card">
+      <div class="director-avatar">🎬</div>
+      <div class="director-name">导演 · Director</div>
+      <div class="director-role">主控智能体 · 统筹故事走向与角色互动</div>
+
+      <div class="form-group">
+        <label class="form-label">故事主题</label>
+        <input class="form-input" id="storyTheme" placeholder="例如：一次意外相遇改变命运的旅程…" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">背景设定</label>
+        <textarea class="form-textarea" id="storySetting" placeholder="描述故事发生的时代、地点、世界观…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">叙事风格</label>
+        <div class="style-chips" id="styleChips">
+          <button class="chip active" onclick="toggleChip(this)">奇幻</button>
+          <button class="chip" onclick="toggleChip(this)">悬疑</button>
+          <button class="chip" onclick="toggleChip(this)">科幻</button>
+          <button class="chip" onclick="toggleChip(this)">现实</button>
+          <button class="chip" onclick="toggleChip(this)">浪漫</button>
+          <button class="chip" onclick="toggleChip(this)">惊悚</button>
+          <button class="chip" onclick="toggleChip(this)">历史</button>
+          <button class="chip" onclick="toggleChip(this)">治愈</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">故事长度</label>
+        <select class="form-select" id="storyLength">
+          <option value="short">短篇（500字以内）</option>
+          <option value="medium" selected>中篇（1000–2000字）</option>
+          <option value="long">长篇（3000字以上）</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">导演指令 <span style="color:var(--text-muted);font-weight:400;text-transform:none;font-size:10px">（可选）</span></label>
+        <textarea class="form-textarea" id="directorNote" style="height:72px" placeholder="给角色们的特别指令，例如：请在第三幕设置反转…"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-generate" style="width:100%;justify-content:center;margin-top:4px" onclick="generateStory()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        开始生成故事
+      </button>
+    </div>
+  </aside>
+
+  <!-- 角色面板 -->
+  <section class="characters-panel">
+    <div class="section-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      角色智能体
+    </div>
+    <div class="characters-grid" id="characterGrid">
+      <!-- 角色卡片由 JS 生成 -->
+    </div>
+  </section>
+
+  <!-- 控制栏 -->
+  <div class="control-bar">
+    <div class="control-group">
+      <span class="control-label">模型</span>
+      <select class="control-select" id="modelSelect">
+        <option>GPT-4o</option>
+        <option>GPT-4 Turbo</option>
+        <option>Claude 3.5 Sonnet</option>
+        <option>Gemini 1.5 Pro</option>
+      </select>
+    </div>
+    <div class="divider-v"></div>
+    <div class="control-group">
+      <span class="control-label">迭代轮次</span>
+      <select class="control-select" id="iterRounds">
+        <option>1 轮</option>
+        <option selected>2 轮</option>
+        <option>3 轮</option>
+        <option>5 轮</option>
+      </select>
+    </div>
+    <div class="divider-v"></div>
+    <div class="control-group">
+      <span class="control-label">创意温度</span>
+      <input type="range" id="tempSlider" min="0" max="100" value="75"
+        style="width:90px;accent-color:var(--accent-purple)" oninput="updateTemp(this)" />
+      <span id="tempVal" style="font-size:12px;color:var(--accent-purple);font-weight:700;min-width:28px">0.75</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addCharacter()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      添加角色
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="resetCharacters()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      重置角色
+    </button>
+  </div>
+
+  <!-- 故事输出 -->
+  <section class="story-panel">
+    <div class="section-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      故事输出
+    </div>
+    <div class="story-container">
+      <div class="story-header">
+        <div class="story-title">
+          <span id="storyTitleDisplay">未命名故事</span>
+        </div>
+        <div class="story-actions">
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab(this,'story')">故事正文</button>
+            <button class="tab" onclick="switchTab(this,'log')">智能体对话</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="copyStory()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            复制
+          </button>
+        </div>
+      </div>
+
+      <!-- 进度条 -->
+      <div class="progress-bar-wrap" id="progressWrap">
+        <span class="progress-label" id="progressLabel">正在初始化…</span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="progressPct">0%</span>
+      </div>
+
+      <div class="story-body">
+        <!-- 故事文本 -->
+        <div class="story-text-area" id="storyTextPanel">
+          <div class="story-empty">
+            <div class="story-empty-icon">📖</div>
+            <div class="story-empty-text">故事尚未生成</div>
+            <div class="story-empty-hint">配置导演设定与角色，然后点击「开始生成」</div>
+          </div>
+        </div>
+
+        <!-- 智能体对话日志 -->
+        <div class="agent-log" id="agentLogPanel" style="display:none">
+          <div class="log-header">智能体对话流</div>
+          <div id="logMessages">
+            <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:40px 0">
+              暂无对话记录
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value" id="statWords">0</span>
+          <span class="stat-label">字数</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="statChars">0</span>
+          <span class="stat-label">角色数</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="statRounds">0</span>
+          <span class="stat-label">迭代轮次</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="statTime">—</span>
+          <span class="stat-label">生成耗时</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   角色数据
+══════════════════════════════════════════════ */
+const COLORS = ['blue','purple','teal','rose'];
+const EMOJIS = ['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿'];
+const COLOR_NAMES = {
+  blue: '蓝', purple: '紫', teal: '青', rose: '玫'
+};
+
+let characters = [
+  { id: 1, name: '艾莲娜', role: '主角 · 魔法师学徒', desc: '充满好奇心，内心温柔却暗藏力量', emoji: '🧙', color: 'blue' },
+  { id: 2, name: '卡尔', role: '配角 · 游侠队长',    desc: '沉默寡言，刀锋之下是赤诚的保护欲', emoji: '🗡️', color: 'purple' },
+  { id: 3, name: '莉莎', role: '配角 · 神秘占卜师',  desc: '看透命运，却仍选择相信改变的可能', emoji: '🔮', color: 'teal' },
+];
+let nextId = 4;
+let currentTab = 'story';
+let isGenerating = false;
+
+/* ══════════════════════════════════════════════
+   渲染角色网格
+══════════════════════════════════════════════ */
+function renderCharacters() {
+  const grid = document.getElementById('characterGrid');
+  grid.innerHTML = '';
+
+  characters.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.dataset.id = c.id;
+    card.dataset.color = c.color;
+    card.innerHTML = `
+      <div class="char-card-header">
+        <div class="char-avatar">${c.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <input class="char-name-input" value="${c.name}" placeholder="角色名称"
+            oninput="updateChar(${c.id},'name',this.value)" />
+          <input class="char-role-input" value="${c.role}" placeholder="角色定位"
+            oninput="updateChar(${c.id},'role',this.value)" />
+        </div>
+      </div>
+      <textarea class="char-desc-input" placeholder="角色性格、背景、特征…"
+        oninput="updateChar(${c.id},'desc',this.value)">${c.desc}</textarea>
+      <div class="char-card-footer">
+        <div class="char-status">
+          <div class="status-dot"></div>
+          待机中
+        </div>
+        <button class="btn-remove" onclick="removeCharacter(${c.id})" title="移除角色">×</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // 添加按钮
+  const addCard = document.createElement('div');
+  addCard.className = 'add-char-card';
+  addCard.onclick = addCharacter;
+  addCard.innerHTML = `
+    <div class="add-char-icon">＋</div>
+    <span class="add-char-label">添加新角色</span>
+  `;
+  grid.appendChild(addCard);
+
+  document.getElementById('statChars').textContent = characters.length;
+}
+
+function updateChar(id, field, value) {
+  const c = characters.find(c => c.id === id);
+  if (c) c[field] = value;
+}
+
+function addCharacter() {
+  const color = COLORS[characters.length % COLORS.length];
+  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+  characters.push({
+    id: nextId++,
+    name: `角色 ${nextId - 1}`,
+    role: '待定角色',
+    desc: '',
+    emoji, color
+  });
+  renderCharacters();
+  showToast('已添加新角色', 'success');
+}
+
+function removeCharacter(id) {
+  if (characters.length <= 1) {
+    showToast('至少保留一个角色', 'error'); return;
+  }
+  characters = characters.filter(c => c.id !== id);
+  renderCharacters();
+  showToast('已移除角色', 'info');
+}
+
+function resetCharacters() {
+  characters = [
+    { id: 1, name: '艾莲娜', role: '主角 · 魔法师学徒', desc: '充满好奇心，内心温柔却暗藏力量', emoji: '🧙', color: 'blue' },
+    { id: 2, name: '卡尔',   role: '配角 · 游侠队长',   desc: '沉默寡言，刀锋之下是赤诚的保护欲', emoji: '🗡️', color: 'purple' },
+    { id: 3, name: '莉莎',   role: '配角 · 神秘占卜师', desc: '看透命运，却仍选择相信改变的可能', emoji: '🔮', color: 'teal' },
+  ];
+  nextId = 4;
+  renderCharacters();
+  showToast('角色已重置', 'info');
+}
+
+/* ══════════════════════════════════════════════
+   风格 Chip
+══════════════════════════════════════════════ */
+function toggleChip(el) {
+  el.classList.toggle('active');
+}
+
+/* ══════════════════════════════════════════════
+   温度滑块
+══════════════════════════════════════════════ */
+function updateTemp(el) {
+  document.getElementById('tempVal').textContent = (el.value / 100).toFixed(2);
+}
+
+/* ══════════════════════════════════════════════
+   Tab 切换
+══════════════════════════════════════════════ */
+function switchTab(btn, tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (tab === 'story') {
+    document.getElementById('storyTextPanel').style.display = '';
+    document.getElementById('agentLogPanel').style.display = 'none';
+  } else {
+    document.getElementById('storyTextPanel').style.display = 'none';
+    document.getElementById('agentLogPanel').style.display = '';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   模拟故事生成
+══════════════════════════════════════════════ */
+const DEMO_STORY = `<p style="color:var(--accent-gold);font-weight:700;font-size:17px;margin-bottom:16px">《迷雾中的十字路口》</p>
+
+<p>那是一个连星光都沉默的夜晚。</p>
+
+<p>艾莲娜踩着湿漉漉的青石板，指尖的魔法因紧张而忍不住冒出细碎的蓝色火星。她从未料到，老师藏在阁楼木箱里的那枚封印戒指，会将她引到世界的边缘——一座被遗忘了三百年的迷雾之城门前。</p>
+
+<p>"别动。"</p>
+
+<p>声音从她背后压低，像刀刃贴近皮肤。艾莲娜僵住了。片刻之后，她认出那把嗓音属于卡尔——游侠队长，也是这半年来与她一同踏遍七座废墟的人。</p>
+
+<p>"是我。"她轻声说。</p>
+
+<p>卡尔的手放开了，叹气声混在雾气里消散："你一个人跑来这里，知不知道这片雾域有多少东西在等着猎物？"</p>
+
+<p>艾莲娜没有解释，只是展开手掌，让戒指上的封文在黑暗中流动出橙红色的光。卡尔盯着那道光，脸上第一次出现了艾莲娜看不懂的神情——不是恐惧，更像是……久违的认出。</p>
+
+<p>"莉莎说得对，"他最终开口，声音比往常低沉了许多，"那个东西，不是你老师的。"</p>
+
+<p>就在这时，浓雾的深处传来一声清越的铃响。</p>
+
+<p>莉莎从黑暗中走出，绛紫色的斗篷上沾着几片银白的枯叶，占卜用的水晶球悬在她掌心，折射出整片雾域的倒影。她看了艾莲娜一眼，又看了看那枚戒指，轻轻摇头：</p>
+
+<p>"我算过了三次，每一次，终点都是同一扇门。"她的目光移向雾中半隐的城门，"而那扇门，需要三个人同时相信才能打开。"</p>
+
+<p>三个人对视，片刻的沉默里，艾莲娜忽然笑了。</p>
+
+<p>那是一种她自己也没预料到的、坚定的笑。她将手向前伸出，卡尔迟疑了一秒，随即覆上去；莉莎最后，却是最用力的那一个。</p>
+
+<p>迷雾颤抖了一下，城门无声地开了。</p>
+
+<p style="color:var(--text-muted);font-style:italic;margin-top:24px;font-size:13px">── 第一幕终 ──</p>`;
+
+const DEMO_LOGS = [
+  { sender: '导演', cls: 'director',    text: '初始化故事世界：奇幻背景，迷雾之城，三位主角。设定核心冲突为封印戒指与遗忘之城。' },
+  { sender: '艾莲娜', cls: 'char-blue', text: '收到角色设定。我将以好奇心驱动行动，在第一幕独自前往城门，触发与其他角色的相遇。' },
+  { sender: '导演', cls: 'director',    text: '批准艾莲娜行动路线。指令卡尔：在城门附近警戒，以低调方式介入，展现保护性格。' },
+  { sender: '卡尔', cls: 'char-purple', text: '角色响应：采用突然现身的方式制造紧张感，随后通过戒指细节展现隐藏的过去。' },
+  { sender: '莉莎', cls: 'char-teal',   text: '占卜场景就绪。我将在关键时刻以第三方视角揭示命运线索，推动三人合作结局。' },
+  { sender: '导演', cls: 'director',    text: '第一轮对话完成，故事结构完整。正在整合各角色叙述，生成最终正文…' },
+];
+
+async function generateStory() {
+  if (isGenerating) return;
+
+  const theme = document.getElementById('storyTheme').value.trim();
+  if (!theme) {
+    showToast('请先填写故事主题', 'error');
+    document.getElementById('storyTheme').focus();
+    return;
+  }
+
+  isGenerating = true;
+  const btn = document.querySelector('.btn-generate');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> 生成中…`;
+
+  // 更新状态
+  document.getElementById('statRounds').textContent = document.getElementById('iterRounds').value.replace(' 轮','');
+  document.getElementById('storyTitleDisplay').textContent = theme.length > 20 ? theme.slice(0,20)+'…' : theme;
+
+  // 切换到日志 tab
+  const logTab = document.querySelectorAll('.tab')[1];
+  switchTab(logTab, 'log');
+  document.getElementById('logMessages').innerHTML = '';
+
+  // 显示进度条
+  const progressWrap = document.getElementById('progressWrap');
+  progressWrap.classList.add('visible');
+  setProgress(0, '正在启动智能体…');
+
+  const startTime = Date.now();
+
+  // 模拟多智能体对话
+  for (let i = 0; i < DEMO_LOGS.length; i++) {
+    await delay(700 + Math.random() * 500);
+    addLogMessage(DEMO_LOGS[i]);
+    setProgress(Math.round(((i + 1) / DEMO_LOGS.length) * 80),
+      i < 2 ? '导演正在规划…' : i < 4 ? '角色响应中…' : '整合叙述…');
+  }
+
+  await delay(600);
+  setProgress(95, '正在生成正文…');
+  await delay(800);
+  setProgress(100, '生成完成！');
+
+  // 显示故事
+  const storyTab = document.querySelectorAll('.tab')[0];
+  switchTab(storyTab, 'story');
+  document.getElementById('storyTextPanel').innerHTML = DEMO_STORY;
+
+  // 统计
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  document.getElementById('statWords').textContent = '483';
+  document.getElementById('statTime').textContent = elapsed + 's';
+
+  await delay(500);
+  progressWrap.classList.remove('visible');
+
+  isGenerating = false;
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> 重新生成`;
+  showToast('故事生成完成！', 'success');
+
+  // 更新角色状态
+  document.querySelectorAll('.char-status').forEach(s => {
+    s.innerHTML = `<div class="status-dot" style="background:var(--accent-gold);box-shadow:0 0 6px rgba(232,197,109,0.6)"></div> 已完成`;
+  });
+}
+
+function addLogMessage({ sender, cls, text }) {
+  const container = document.getElementById('logMessages');
+  const msg = document.createElement('div');
+  msg.className = `log-message ${cls}`;
+  msg.innerHTML = `
+    <div class="log-sender">${sender}</div>
+    <div class="log-content">${text}</div>
+  `;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ══════════════════════════════════════════════
+   工具函数
+══════════════════════════════════════════════ */
+function copyStory() {
+  const text = document.getElementById('storyTextPanel').innerText;
+  if (!text || text.includes('故事尚未生成')) {
+    showToast('暂无故事内容可复制', 'error'); return;
+  }
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success'));
+}
+
+function exportStory() {
+  const text = document.getElementById('storyTextPanel').innerText;
+  if (!text || text.includes('故事尚未生成')) {
+    showToast('暂无故事内容可导出', 'error'); return;
+  }
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (document.getElementById('storyTitleDisplay').textContent || '故事') + '.txt';
+  a.click(); showToast('已导出为文本文件', 'success');
+}
+
+function clearAll() {
+  document.getElementById('storyTheme').value = '';
+  document.getElementById('storySetting').value = '';
+  document.getElementById('directorNote').value = '';
+  document.getElementById('storyTextPanel').innerHTML = `
+    <div class="story-empty">
+      <div class="story-empty-icon">📖</div>
+      <div class="story-empty-text">故事尚未生成</div>
+      <div class="story-empty-hint">配置导演设定与角色，然后点击「开始生成」</div>
+    </div>`;
+  document.getElementById('logMessages').innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:40px 0">暂无对话记录</div>`;
+  document.getElementById('statWords').textContent = '0';
+  document.getElementById('statTime').textContent = '—';
+  document.getElementById('statRounds').textContent = '0';
+  document.getElementById('storyTitleDisplay').textContent = '未命名故事';
+  document.getElementById('progressWrap').classList.remove('visible');
+  const btn = document.querySelector('.btn-generate');
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> 开始生成故事`;
+  isGenerating = false;
+  showToast('已清空', 'info');
+}
+
+/* Toast */
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  toast.innerHTML = `<span style="font-weight:800">${icons[type]}</span> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0'; toast.style.transform = 'translateY(6px)';
+    toast.style.transition = 'all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 2800);
+}
+
+/* ══════════════════════════════════════════════
+   初始化
+══════════════════════════════════════════════ */
+renderCharacters();
+</script>
+</body>
+</html>
