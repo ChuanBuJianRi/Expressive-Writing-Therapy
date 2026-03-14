@@ -570,6 +570,90 @@
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .btn-remove { width: 20px; height: 20px; border-radius: 50%; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
     .btn-remove:hover { background: rgba(240,98,146,0.12); border-color: var(--accent-rose); color: var(--accent-rose); }
+    .btn-log { width: 20px; height: 20px; border-radius: 50%; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .btn-log:hover { background: rgba(91,141,238,0.12); border-color: var(--accent-blue); }
+
+    /* ── Character Profile Drawer ── */
+    #charProfileOverlay {
+      position: fixed; inset: 0; z-index: 1200;
+      background: rgba(5,7,14,0.6); backdrop-filter: blur(8px);
+      display: flex; align-items: stretch; justify-content: flex-end;
+    }
+    #charProfileDrawer {
+      width: 420px; max-width: 94vw;
+      background: var(--bg-card); border-left: 1px solid var(--border-light);
+      display: flex; flex-direction: column;
+      box-shadow: -12px 0 40px rgba(0,0,0,0.5);
+      animation: slideInRight 0.22s ease;
+    }
+    @keyframes slideInRight { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    #charProfileHead {
+      padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+      background: var(--bg-card2); flex-shrink: 0;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .cp-avatar {
+      width: 52px; height: 52px; border-radius: 50%; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+      flex-shrink: 0;
+    }
+    .cp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .cp-name { font-size: 16px; font-weight: 800; }
+    .cp-role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .cp-stats { display: flex; gap: 12px; margin-top: 6px; }
+    .cp-stat { font-size: 10px; color: var(--text-muted); }
+    .cp-stat strong { color: var(--accent-gold); }
+    #charProfileTabs {
+      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      background: var(--bg-card2);
+    }
+    .cp-tab {
+      padding: 8px 16px; font-size: 11px; font-weight: 600; cursor: pointer;
+      border: none; background: none; color: var(--text-muted); font-family: inherit;
+      border-bottom: 2px solid transparent; transition: all 0.15s;
+    }
+    .cp-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+    #charProfileBody { flex: 1; overflow-y: auto; padding: 16px 18px 24px; }
+    #charProfileBody::-webkit-scrollbar { width: 4px; }
+    #charProfileBody::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .cp-info-section { margin-bottom: 14px; }
+    .cp-info-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 5px; }
+    .cp-info-text { font-size: 12px; color: var(--text-secondary); line-height: 1.65; }
+    /* Timeline */
+    .cp-timeline { display: flex; flex-direction: column; gap: 12px; }
+    .cp-entry {
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      animation: fadeIn 0.15s ease;
+    }
+    .cp-entry-head {
+      display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+      background: var(--bg-card2); font-size: 10px; flex-wrap: wrap; gap: 6px;
+    }
+    .cp-chap-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+      background: rgba(232,197,109,0.12); color: var(--accent-gold);
+      border: 1px solid rgba(232,197,109,0.25); white-space: nowrap;
+    }
+    .cp-scene-title { font-size: 10px; color: var(--text-secondary); font-weight: 600; flex: 1; }
+    .cp-tension {
+      font-size: 9px; padding: 1px 6px; border-radius: 10px;
+    }
+    .cp-tension.high { background: rgba(240,98,146,0.12); color: var(--accent-rose); }
+    .cp-tension.mid  { background: rgba(232,197,109,0.12); color: var(--accent-gold); }
+    .cp-tension.low  { background: rgba(62,201,167,0.12);  color: var(--accent-teal); }
+    .cp-entry-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .cp-row { display: flex; gap: 8px; align-items: flex-start; }
+    .cp-row-icon { font-size: 11px; flex-shrink: 0; margin-top: 1px; width: 16px; text-align: center; }
+    .cp-row-text { font-size: 11px; color: var(--text-secondary); line-height: 1.55; }
+    .cp-dialogue { font-style: italic; color: var(--text-primary); }
+    .cp-emotion-badge {
+      display: inline-block; font-size: 9.5px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(155,109,255,0.1); color: var(--accent-purple);
+      border: 1px solid rgba(155,109,255,0.2); margin-top: 2px;
+    }
+    .cp-growth { font-size: 10px; color: var(--accent-teal); font-style: italic; }
+    .cp-empty { font-size: 12px; color: var(--text-muted); text-align: center; padding: 32px 0; line-height: 1.8; }
     .add-char-card {
       background: transparent; border: 1.5px dashed var(--border); border-radius: 10px;
       min-height: 100px; display: flex; flex-direction: column; align-items: center;
@@ -1356,6 +1440,26 @@
     </div>
   </div>
 
+  <!-- ── Character Profile Drawer ── -->
+  <div id="charProfileOverlay" style="display:none" onclick="closeCharProfile(event)">
+    <div id="charProfileDrawer" onclick="event.stopPropagation()">
+      <div id="charProfileHead">
+        <div class="cp-avatar" id="cpAvatar"></div>
+        <div style="flex:1;min-width:0">
+          <div class="cp-name" id="cpName"></div>
+          <div class="cp-role" id="cpRole"></div>
+          <div class="cp-stats" id="cpStats"></div>
+        </div>
+        <button style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px;line-height:1" onclick="closeCharProfile()">×</button>
+      </div>
+      <div id="charProfileTabs">
+        <button class="cp-tab active" id="cpTabHistory" onclick="switchCpTab('history')">📜 History</button>
+        <button class="cp-tab" id="cpTabProfile" onclick="switchCpTab('profile')">🧩 Profile</button>
+      </div>
+      <div id="charProfileBody"></div>
+    </div>
+  </div>
+
   <!-- Reset All Confirmation -->
   <div class="reset-confirm-overlay" id="resetConfirmOverlay" style="display:none">
     <div class="reset-confirm-card">
@@ -1501,6 +1605,7 @@ let characters=[
 let storyCharacters = []; // characters added mid-story
 let nextId = 4;
 let chapterCasts = {};   // { chapterNum: [charId, ...] }
+let charLogs = {};       // { charId: [{chapter,chapterTitle,scene,sceneTitle,tension,...action}] }
 let activeCastChap = 0;  // chapter currently awaiting cast drag
 
 function renderCharacters() {
@@ -1560,7 +1665,10 @@ function _renderCharGrid(gridId, chars, isStory) {
       </div>
       <div class="char-footer">
         <div class="char-status"><div class="status-dot"></div>Standby</div>
-        <button class="btn-remove" onclick="removeChar('${c.id}',${isStory})">×</button>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="btn-log" onclick="openCharProfile('${c.id}','${(c.name||'').replace(/'/g,"\\'")}',${isStory})" title="View character history">📜</button>
+          <button class="btn-remove" onclick="removeChar('${c.id}',${isStory})">×</button>
+        </div>
       </div>`;
     g.appendChild(d);
   });
@@ -3136,6 +3244,23 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
       totalWords+=ch.prose.split(/\s+/).filter(Boolean).length;
       updateStats();
       renderTreeSVG();
+      // Store per-character action logs from this chapter
+      (ch.scenes||[]).forEach(scene=>{
+        (scene.character_actions||[]).forEach(act=>{
+          const cid=String(act.character_id||act.character_name||'?');
+          if(!charLogs[cid]) charLogs[cid]=[];
+          charLogs[cid].push({
+            chapter:ch.chapter_number, chapterTitle:ch.title,
+            scene:scene.scene_number, sceneTitle:scene.title,
+            tension:scene.tension_level,
+            public_action:act.public_action||'',
+            private_thought:act.private_thought||'',
+            dialogue:act.dialogue||'',
+            emotional_state:act.emotional_state||'',
+            growth_moment:act.growth_moment||'',
+          });
+        });
+      });
       setProgress(85,'Generating choices…');
       await generateBranchChoices();
       // Auto-update character relationship network
@@ -3346,8 +3471,9 @@ function clearAll(){
   document.getElementById('addStoryCharBtn').style.display='none';
   storyCharacters=[];
   _renderStoryCharGrid();
-  // Reset chapter cast strip
+  // Reset chapter cast strip + character logs
   chapterCasts={}; activeCastChap=0;
+  charLogs={};
   const castBody = document.getElementById('castStripBody');
   if (castBody) {
     castBody.innerHTML = '<div class="cast-strip-empty" id="castStripEmpty">Start a story to build your chapter casts</div>';
@@ -3503,10 +3629,120 @@ function doResetAll() {
   clearAll();
 }
 
+/* ══════════════════════════════════════════
+   CHARACTER PROFILE DRAWER
+══════════════════════════════════════════ */
+let _cpCharId = null, _cpIsStory = false, _cpTab = 'history';
+
+function openCharProfile(charId, charName, isStory) {
+  _cpCharId = String(charId); _cpIsStory = isStory; _cpTab = 'history';
+  const c = (isStory ? storyCharacters : characters).find(x => String(x.id) === String(charId))
+         || allCharsFlat().find(x => String(x.id) === String(charId));
+  if (!c) return;
+
+  // Header
+  const colorBg = {blue:'rgba(91,141,238,0.18)',purple:'rgba(155,109,255,0.18)',teal:'rgba(62,201,167,0.18)',rose:'rgba(240,98,146,0.18)'}[c.color||'blue']||'rgba(91,141,238,0.18)';
+  const avEl = document.getElementById('cpAvatar');
+  avEl.style.background = colorBg;
+  avEl.innerHTML = c.avatar ? `<img src="${c.avatar}" alt="${c.name}"/>` : (c.emoji||'🎭');
+  document.getElementById('cpName').textContent = c.name;
+  document.getElementById('cpRole').textContent = c.role || '';
+
+  // Stats
+  const logs = charLogs[_cpCharId] || charLogs[charName] || [];
+  const chapNums = [...new Set(logs.map(l=>l.chapter))];
+  document.getElementById('cpStats').innerHTML =
+    `<div class="cp-stat">Chapters: <strong>${chapNums.length}</strong></div>`
+    + `<div class="cp-stat">Scenes: <strong>${logs.length}</strong></div>`;
+
+  // Tabs
+  document.getElementById('cpTabHistory').classList.toggle('active', true);
+  document.getElementById('cpTabProfile').classList.toggle('active', false);
+  _renderCpTab('history', c);
+
+  document.getElementById('charProfileOverlay').style.display = 'flex';
+}
+
+function closeCharProfile(e) {
+  if (e && e.target !== document.getElementById('charProfileOverlay')) return;
+  document.getElementById('charProfileOverlay').style.display = 'none';
+  _cpCharId = null;
+}
+
+function switchCpTab(tab) {
+  _cpTab = tab;
+  document.getElementById('cpTabHistory').classList.toggle('active', tab==='history');
+  document.getElementById('cpTabProfile').classList.toggle('active', tab==='profile');
+  const c = allCharsFlat().find(x => String(x.id) === _cpCharId);
+  _renderCpTab(tab, c);
+}
+
+function _renderCpTab(tab, c) {
+  const body = document.getElementById('charProfileBody');
+  if (tab === 'profile') {
+    body.innerHTML = `
+      <div class="cp-info-section">
+        <div class="cp-info-label">Personality &amp; Traits</div>
+        <div class="cp-info-text">${c?.personality || '<em style="opacity:.5">Not set</em>'}</div>
+      </div>
+      <div class="cp-info-section">
+        <div class="cp-info-label">Background / Backstory</div>
+        <div class="cp-info-text">${c?.background || '<em style="opacity:.5">Not set</em>'}</div>
+      </div>
+      <div class="cp-info-section">
+        <div class="cp-info-label">Hidden Secrets / Wounds</div>
+        <div class="cp-info-text">${c?.secrets || '<em style="opacity:.5">Not set</em>'}</div>
+      </div>`;
+    return;
+  }
+
+  // History tab
+  const logs = charLogs[_cpCharId]
+    || (c ? charLogs[c.name] : null)
+    || [];
+
+  if (!logs.length) {
+    body.innerHTML = `<div class="cp-empty">No story history yet.<br/>Start a story to track ${c?.name||'this character'}'s journey.</div>`;
+    return;
+  }
+
+  // Group by chapter
+  const byChap = {};
+  logs.forEach(l => {
+    if (!byChap[l.chapter]) byChap[l.chapter] = { title: l.chapterTitle, scenes: [] };
+    byChap[l.chapter].scenes.push(l);
+  });
+
+  let html = '<div class="cp-timeline">';
+  Object.entries(byChap).sort((a,b)=>+a[0]-+b[0]).forEach(([chNum, chData])=>{
+    html += `<div style="font-size:10px;font-weight:700;color:var(--accent-gold);margin:8px 0 4px;letter-spacing:0.05em">Chapter ${chNum} — ${chData.title}</div>`;
+    chData.scenes.forEach(l => {
+      const tClass = l.tension >= 0.72 ? 'high' : l.tension >= 0.45 ? 'mid' : 'low';
+      const tLabel = `${Math.round((l.tension||0)*100)}%`;
+      html += `<div class="cp-entry">
+        <div class="cp-entry-head">
+          <span class="cp-scene-title">Scene ${l.scene}: ${l.sceneTitle||''}</span>
+          <span class="cp-tension ${tClass}">⚡${tLabel}</span>
+        </div>
+        <div class="cp-entry-body">`;
+      if (l.public_action) html += `<div class="cp-row"><span class="cp-row-icon">⚡</span><div class="cp-row-text">${l.public_action}</div></div>`;
+      if (l.dialogue)      html += `<div class="cp-row"><span class="cp-row-icon">💬</span><div class="cp-row-text cp-dialogue">"${l.dialogue}"</div></div>`;
+      if (l.private_thought) html += `<div class="cp-row"><span class="cp-row-icon">💭</span><div class="cp-row-text" style="color:var(--text-muted);font-style:italic">${l.private_thought}</div></div>`;
+      if (l.emotional_state) html += `<div class="cp-row"><span class="cp-row-icon">🎭</span><div class="cp-row-text"><span class="cp-emotion-badge">${l.emotional_state}</span></div></div>`;
+      if (l.growth_moment)   html += `<div class="cp-row"><span class="cp-row-icon">✦</span><div class="cp-row-text cp-growth">${l.growth_moment}</div></div>`;
+      html += `</div></div>`;
+    });
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
 // ESC cancels connect mode or deselects
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (_connectMode) { clearTimeout(_lpTimer); _lpTimer = null; _clearChargeRing(); _exitConnectMode(); }
+    if (document.getElementById('charProfileOverlay').style.display !== 'none') {
+      document.getElementById('charProfileOverlay').style.display = 'none'; _cpCharId = null;
+    } else if (_connectMode) { clearTimeout(_lpTimer); _lpTimer = null; _clearChargeRing(); _exitConnectMode(); }
     else if (selectedNetNode) { selectedNetNode = null; renderNetwork(); }
   }
 });
