@@ -575,7 +575,7 @@ def generate_choices():
     world_desc = story.world_config.get("description", "")[:200]
     char_names = ", ".join(c.get("name", "") for c in story.all_characters)
     core_tensions = ", ".join(
-        f"{c['name']}({c.get('emotional_state', '')})"
+        f"{c.get('character_name', c.get('name', '?'))}({c.get('emotional_state', '')})"
         for s in last_ch.scenes
         for c in (a.__dict__ for a in s.character_actions)
         if c.get("emotional_state")
