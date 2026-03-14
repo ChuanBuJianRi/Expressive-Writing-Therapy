@@ -1696,17 +1696,22 @@ function renderNetwork() {
       svg.appendChild(hit);
     }
 
-    // Label (foreignObject centered on edge)
+  }); // end relationships.forEach — labels rendered as HTML below
+
+  // ── Relationship labels as HTML divs (not SVG foreignObject) ──
+  canvas.querySelectorAll('.net-rel-label').forEach(l => l.remove());
+  relationships.forEach(rel => {
+    const fp = nodePositions[String(rel.fromId)];
+    const tp = nodePositions[String(rel.toId)];
+    if (!fp || !tp) return;
     const mx = (fp.x + tp.x) / 2, my = (fp.y + tp.y) / 2;
-    const lw = Math.max(rel.label.length * 7.5 + 20, 44), lh = 22;
-    const fo = _svg('foreignObject', { x: mx - lw/2, y: my - lh/2, width: lw, height: lh, overflow:'visible' });
-    fo.style.pointerEvents = 'all';
-    const span = document.createElement('div');
-    span.className = 'rel-label-badge';
-    span.style.cssText = 'display:inline-block;width:100%;text-align:center;box-sizing:border-box';
-    span.textContent = rel.label;
-    span.onclick = (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); };
-    fo.appendChild(span); svg.appendChild(fo);
+    const lbl = document.createElement('div');
+    lbl.className = 'rel-label-badge net-rel-label';
+    lbl.textContent = rel.label;
+    lbl.style.cssText = `position:absolute;left:${mx}px;top:${my}px;transform:translate(-50%,-50%);z-index:6;cursor:pointer;pointer-events:auto`;
+    lbl.addEventListener('click', e => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
+    lbl.addEventListener('mousedown', e => e.stopPropagation()); // don't trigger node drag
+    canvas.appendChild(lbl);
   });
 
   // ── Node selection hint ──
@@ -1775,11 +1780,12 @@ function _onNetMouseDown(e, charId) {
   const pos = nodePositions[charId] || { x:0, y:0 };
   let gesture = 'pending'; // 'pending' | 'drag' | 'connect'
   const sx = e.clientX, sy = e.clientY;
+  let ringTimer = null;
 
-  // Show charge ring immediately on hold
-  _showChargeRing(charId);
+  // Show charge ring only after 200ms (no flash on quick clicks)
+  ringTimer = setTimeout(() => { if (gesture === 'pending') _showChargeRing(charId); }, 200);
 
-  // Long-press fires after 420 ms if no big movement
+  // Enter connect mode after 420ms
   _lpTimer = setTimeout(() => {
     if (gesture === 'pending') {
       gesture = 'connect';
@@ -1792,7 +1798,7 @@ function _onNetMouseDown(e, charId) {
     const dist = Math.hypot(ev.clientX - sx, ev.clientY - sy);
     if (gesture === 'pending' && dist > 8) {
       // Moved too much before long-press fired → treat as node drag
-      clearTimeout(_lpTimer); _lpTimer = null;
+      clearTimeout(ringTimer); clearTimeout(_lpTimer); _lpTimer = null;
       _clearChargeRing();
       gesture = 'drag';
     }
@@ -1806,7 +1812,7 @@ function _onNetMouseDown(e, charId) {
   };
 
   const onUp = ev => {
-    clearTimeout(_lpTimer); _lpTimer = null;
+    clearTimeout(ringTimer); clearTimeout(_lpTimer); _lpTimer = null;
     _clearChargeRing();
     if      (gesture === 'pending') _onNetNodeClick(charId);   // quick click
     else if (gesture === 'connect') _handleConnectDrop(ev);    // drop
@@ -3060,7 +3066,7 @@ function clearAll(){
   // Reset network
   relationships=[]; nodePositions={}; selectedNetNode=null; closeRelPopup();
   const canvas=document.getElementById('networkCanvas');
-  if(canvas){ canvas.querySelectorAll('.net-node').forEach(n=>n.remove()); const nsvg=canvas.querySelector('svg.network-svg'); if(nsvg) nsvg.remove(); }
+  if(canvas){ canvas.querySelectorAll('.net-node,.net-rel-label').forEach(n=>n.remove()); const nsvg=canvas.querySelector('svg.network-svg'); if(nsvg) nsvg.remove(); }
   resetGenerateBtn();
   showToast('Cleared','info');
 }
