@@ -715,6 +715,142 @@ def user_input():
     return jsonify({"status": "accepted", "session_id": session_id})
 
 
+# ═══════════════════════════════════════════════════
+# /generate-branch-previews — 2 actual story prose continuations
+# ═══════════════════════════════════════════════════
+
+@story_bp.route("/generate-branch-previews", methods=["POST"])
+def generate_branch_previews():
+    """Generate 2 distinctly different story prose continuation previews at a decision point.
+
+    Body: { session_id }
+    Returns: { previews: [{id, title, prose, tone}, {id, title, prose, tone}] }
+    """
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+
+    story = _stories.get(session_id)
+    if not story:
+        return jsonify({"error": "Session not found"}), 404
+    if not story.chapters:
+        return jsonify({"error": "No chapters generated yet"}), 400
+
+    last_ch = story.chapters[-1]
+    decision_scene = next(
+        (s for s in reversed(last_ch.scenes) if s.is_decision_point), None
+    )
+    last_prose = decision_scene.prose if decision_scene else last_ch.prose
+
+    world_desc = story.world_config.get("description", "")[:300]
+    char_descs = "\n".join(
+        f"- {c.get('name')}: {c.get('personality', '')}"
+        for c in story.all_characters
+    )
+
+    prompt = (
+        f"Story theme: {story.theme}\n"
+        f"World: {world_desc}\n"
+        f"Characters:\n{char_descs}\n\n"
+        f"Story so far (last passage):\n{last_prose[-900:]}\n\n"
+        "The story has just reached a critical, dramatic turning point. "
+        "Write 2 DISTINCTLY DIFFERENT continuations — Branch A and Branch B.\n"
+        "Each branch MUST:\n"
+        "- Be 250–320 words of vivid, literary prose in the SAME style as the story\n"
+        "- Take the story in a different emotional/narrative direction\n"
+        "- Have a short dramatic title (≤6 words)\n"
+        "- Have a one-word tone descriptor\n\n"
+        "Vary the directions: e.g., confrontation vs. escape, revelation vs. sacrifice, "
+        "darkness vs. unexpected hope, external action vs. internal revelation, "
+        "acceptance vs. resistance.\n\n"
+        'Return ONLY this JSON (no markdown, no extra text):\n'
+        '{"previews": ['
+        '{"id": "A", "title": "...", "tone": "one-word", "prose": "250-320 word continuation"},'
+        '{"id": "B", "title": "...", "tone": "one-word", "prose": "250-320 word continuation"}'
+        ']}'
+    )
+
+    try:
+        result = chat_json([{"role": "user", "content": prompt}], temperature=0.93)
+        parsed = json.loads(result)
+        return jsonify(parsed)
+    except Exception as e:
+        log.error("generate_branch_previews error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════
+# /director-chat — user talks to the director, gets custom continuation
+# ═══════════════════════════════════════════════════
+
+@story_bp.route("/director-chat", methods=["POST"])
+def director_chat():
+    """User sends a creative direction to the Director, who responds + writes a preview.
+
+    Body: { session_id, message }
+    Returns: { director_response, title, prose, tone }
+    """
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    user_message = data.get("message", "").strip()
+
+    story = _stories.get(session_id)
+    if not story:
+        return jsonify({"error": "Session not found"}), 404
+    if not user_message:
+        return jsonify({"error": "message is required"}), 400
+
+    last_ch = story.chapters[-1] if story.chapters else None
+    last_prose = ""
+    if last_ch:
+        decision_scene = next(
+            (s for s in reversed(last_ch.scenes) if s.is_decision_point), None
+        )
+        last_prose = (decision_scene.prose if decision_scene else last_ch.prose)[-700:]
+
+    world_desc = story.world_config.get("description", "")[:250]
+    char_descs = "\n".join(
+        f"- {c.get('name')}: {c.get('personality', '')}"
+        for c in story.all_characters
+    )
+
+    system_prompt = (
+        "You are the Director — a master storyteller in the tradition of Ingmar Bergman and Wong Kar-wai. "
+        "A collaborator is giving you creative direction for their therapeutic narrative. "
+        "You receive their instruction, briefly acknowledge it in your Director's voice (1–2 sentences, "
+        "warm but cinematic), then write a vivid ~300-word prose continuation that honors their intent "
+        "while maintaining narrative quality. Maintain literary prose style throughout.\n"
+        f"Story theme: {story.theme}\n"
+        f"World: {world_desc}\n"
+        f"Characters:\n{char_descs}"
+    )
+
+    user_prompt = (
+        f"Story so far (last passage):\n{last_prose}\n\n"
+        f"My direction for what should happen next: {user_message}\n\n"
+        "Please acknowledge my direction briefly (as the Director) and write a ~300-word "
+        "continuation that fulfills it.\n"
+        'Return ONLY this JSON (no markdown, no extra text):\n'
+        '{"director_response": "1-2 sentence acknowledgment as the Director", '
+        '"title": "≤6-word dramatic title", '
+        '"tone": "one-word tone", '
+        '"prose": "~300-word continuation prose"}'
+    )
+
+    try:
+        result = chat_json(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.88,
+        )
+        parsed = json.loads(result)
+        return jsonify(parsed)
+    except Exception as e:
+        log.error("director_chat error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @story_bp.route("/export/<session_id>", methods=["GET"])
 def export_story(session_id: str):
     story = _stories.get(session_id)

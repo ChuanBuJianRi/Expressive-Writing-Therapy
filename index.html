@@ -346,6 +346,28 @@
       align-items: center; justify-content: center; gap: 8px;
       color: var(--text-muted); pointer-events: none;
     }
+    /* Connect mode states */
+    .net-node.connecting .net-av {
+      border-color: var(--accent-gold) !important;
+      box-shadow: 0 0 0 5px rgba(232,197,109,0.35), 0 0 24px rgba(232,197,109,0.25) !important;
+    }
+    .net-node.connect-target .net-av {
+      border-color: var(--accent-teal) !important;
+      box-shadow: 0 0 0 5px rgba(62,201,167,0.35) !important;
+      transform: scale(1.1);
+    }
+    /* Live drag line animation */
+    @keyframes dashFlow { to { stroke-dashoffset: -20; } }
+    .live-connect-line { animation: dashFlow 0.35s linear infinite; }
+    /* Pulsing ring on source node */
+    @keyframes ringPulse { 0%,100%{opacity:.55;} 50%{opacity:.12;} }
+    .connect-ring-el { animation: ringPulse 0.9s ease-in-out infinite; }
+    /* Long-press charge ring (fills up during hold) */
+    @keyframes chargeRing {
+      from { stroke-dashoffset: 226; opacity: 0.3; }
+      to   { stroke-dashoffset: 0;   opacity: 0.9; }
+    }
+    .charge-ring-el { animation: chargeRing 0.42s ease-out forwards; }
 
     /* Avatar */
     .char-avatar {
@@ -611,12 +633,76 @@
     }
     .tree-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-muted); font-size: 12px; }
 
-    /* World Map placeholder */
-    .map-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--text-muted); }
-    .map-preview { width: 480px; max-width: 90%; height: 280px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+    /* World Map */
+    .map-panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; position: relative; }
+    .map-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--text-muted); }
+    .map-placeholder-inner { width: 480px; max-width: 90%; height: 280px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
     .map-icon { font-size: 40px; opacity: 0.3; }
     .map-coming { font-size: 13px; font-weight: 600; opacity: 0.5; }
     .map-sub { font-size: 11px; opacity: 0.35; }
+
+    /* Live map */
+    .map-live { display: flex; flex-direction: column; height: 100%; }
+    .map-header { padding: 12px 20px 8px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    .map-world-name { font-size: 14px; font-weight: 700; color: var(--accent-gold); letter-spacing: 0.02em; }
+    .map-world-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .map-stats { display: flex; gap: 12px; flex-shrink: 0; }
+    .map-stat { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .map-stat-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .map-canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    #worldMapSvg { width: 100%; height: 100%; display: block; }
+
+    /* Map legend */
+    .map-legend { padding: 8px 20px; border-top: 1px solid var(--border); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+    .map-legend-title { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+    .map-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; border-radius: 12px; border: 1px solid transparent; transition: all 0.15s; }
+    .map-legend-item:hover { border-color: var(--border-light); background: var(--bg-card2); }
+    .map-legend-item.visited { color: var(--accent-gold); }
+    .map-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .map-legend-chapter { font-size: 9px; opacity: 0.6; margin-left: 2px; }
+
+    /* Branch section enhanced */
+    .branch-mode-bar { display: flex; gap: 6px; margin-bottom: 12px; }
+    .branch-mode-btn { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; font-family: inherit; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .branch-mode-btn:hover { background: var(--bg-card2); color: var(--text-primary); border-color: var(--border-light); }
+    .branch-mode-btn.active { background: rgba(232,197,109,0.1); color: var(--accent-gold); border-color: rgba(232,197,109,0.35); }
+
+    /* Branch Preview Cards */
+    .branch-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .preview-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all 0.18s; position: relative; overflow: hidden; }
+    .preview-card:hover { border-color: var(--border-light); background: var(--bg-card2); transform: translateY(-1px); }
+    .preview-card.selected { border-color: var(--accent-gold); background: rgba(232,197,109,0.06); box-shadow: 0 0 0 1px rgba(232,197,109,0.2); }
+    .preview-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+    .preview-card-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; background: rgba(155,109,255,0.12); color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.2); flex-shrink: 0; }
+    .preview-card-tone { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(91,141,238,0.1); color: var(--accent-blue); border: 1px solid rgba(91,141,238,0.2); flex-shrink: 0; }
+    .preview-card-title { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.3; }
+    .preview-card-prose { font-size: 11px; color: var(--text-secondary); line-height: 1.65; max-height: 140px; overflow: hidden; position: relative; }
+    .preview-card-prose.expanded { max-height: none; }
+    .preview-card-prose::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(transparent, var(--bg-card)); pointer-events: none; }
+    .preview-card.expanded .preview-card-prose::after { display: none; }
+    .preview-expand-btn { font-size: 10px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; margin-top: 4px; }
+    .preview-expand-btn:hover { color: var(--text-primary); }
+    .preview-continue-bar { margin-top: 12px; display: flex; justify-content: center; }
+    .branch-preview-loading { display: flex; align-items: center; gap: 10px; padding: 20px 0; color: var(--text-muted); font-size: 12px; grid-column: 1 / -1; }
+
+    /* Director Chat */
+    .director-chat-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .director-chat-hint { font-size: 11px; color: var(--text-muted); line-height: 1.6; padding: 6px 0; }
+    .director-messages { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 4px 0; }
+    .director-msg { border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; line-height: 1.6; }
+    .director-msg.director { background: rgba(155,109,255,0.08); border: 1px solid rgba(155,109,255,0.2); color: var(--text-primary); }
+    .director-msg.director .dm-sender { font-size: 10px; font-weight: 800; color: var(--accent-purple); letter-spacing: 0.06em; margin-bottom: 4px; }
+    .director-msg.preview { background: rgba(232,197,109,0.06); border: 1px solid rgba(232,197,109,0.2); }
+    .director-msg.preview .dm-preview-title { font-size: 12px; font-weight: 700; color: var(--accent-gold); margin-bottom: 6px; }
+    .director-msg.preview .dm-preview-prose { font-size: 11px; color: var(--text-secondary); line-height: 1.65; max-height: 130px; overflow: hidden; position: relative; }
+    .director-msg.preview .dm-preview-prose::after { content:''; position:absolute; bottom:0; left:0; right:0; height:30px; background: linear-gradient(transparent, rgba(14,11,25,0.95)); }
+    .director-msg.preview.expanded .dm-preview-prose { max-height: none; }
+    .director-msg.preview.expanded .dm-preview-prose::after { display: none; }
+    .dm-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .director-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .director-input-row textarea { flex: 1; min-height: 60px; max-height: 120px; resize: vertical; background: var(--bg-card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-primary); font-family: inherit; font-size: 12px; line-height: 1.5; outline: none; }
+    .director-input-row textarea:focus { border-color: var(--border-light); }
+    .director-input-row textarea::placeholder { color: var(--text-muted); }
 
     /* Stats bar */
     .stats-bar {
@@ -952,8 +1038,40 @@
 
         <!-- Branch choices -->
         <div class="branch-section" id="branchSection" style="display:none">
-          <div class="branch-label">What happens next?</div>
-          <div class="branch-cards" id="branchCards"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+            <div class="branch-label" style="margin-bottom:0">⚡ Story Branch</div>
+            <div class="branch-mode-bar" style="margin-bottom:0">
+              <button class="branch-mode-btn active" id="bmChoose" onclick="setBranchMode('choose')">📜 Choose</button>
+              <button class="branch-mode-btn" id="bmPreview" onclick="setBranchMode('preview')">🎬 Preview</button>
+              <button class="branch-mode-btn" id="bmDirector" onclick="setBranchMode('director')">🎭 Director</button>
+            </div>
+          </div>
+          <!-- Mode: Choose (default 3 text choices) -->
+          <div id="branchModeChoose">
+            <div class="branch-cards" id="branchCards"></div>
+          </div>
+          <!-- Mode: Preview (2 prose continuations) -->
+          <div id="branchModePreview" style="display:none">
+            <div class="branch-previews" id="branchPreviews"></div>
+            <div class="preview-continue-bar" id="previewContinueBar" style="display:none">
+              <button class="btn btn-primary btn-sm" onclick="continueWithPreview()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Continue With This Path
+              </button>
+            </div>
+          </div>
+          <!-- Mode: Director Chat -->
+          <div id="branchModeDirector" style="display:none">
+            <div class="director-chat-wrap">
+              <div class="director-chat-hint">Tell the Director what you want to happen — they'll acknowledge your vision and write a scene preview.</div>
+              <div class="director-messages" id="directorMessages"></div>
+              <div class="director-input-row">
+                <textarea id="directorChatInput" placeholder="e.g. I want the protagonist to confront their deepest fear… or Make the tone darker and more hopeful at the same time…" onkeydown="if(event.ctrlKey&&event.key==='Enter')sendDirectorMessage()"></textarea>
+                <button class="btn btn-primary btn-sm" onclick="sendDirectorMessage()" id="directorSendBtn">Send</button>
+              </div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:4px">Ctrl+Enter to send</div>
+            </div>
+          </div>
         </div>
 
       </div><!-- /panelStory -->
@@ -991,7 +1109,7 @@
         <div class="network-canvas" id="networkCanvas">
           <!-- SVG edges rendered here by JS -->
           <!-- Node divs rendered here by JS -->
-          <div class="network-hint" id="networkHint">Click a character to select · Click another to connect them</div>
+          <div class="network-hint" id="networkHint">Long-press an avatar and drag to another to connect · Click to select</div>
           <div class="network-toolbar">
             <button class="btn btn-ghost btn-xs" onclick="resetNetworkLayout()" title="Reset layout">↺ Reset</button>
             <button class="btn btn-ghost btn-xs" onclick="clearAllRelationships()" title="Clear all connections">✕ Clear</button>
@@ -1006,13 +1124,35 @@
       <!-- World map tab -->
       <div class="tab-panel" id="panelMap">
         <div class="map-panel">
-          <div class="map-preview">
-            <div class="map-icon">🗺</div>
-            <div class="map-coming">World Map</div>
-            <div class="map-sub">Coming in next version · Will visualize locations from your story</div>
+
+          <!-- Placeholder (shown before story starts) -->
+          <div class="map-placeholder" id="mapPlaceholder">
+            <div class="map-placeholder-inner">
+              <div class="map-icon">🗺</div>
+              <div class="map-coming">World Map</div>
+              <div class="map-sub">Start a story to generate the world map</div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);max-width:360px;text-align:center;line-height:1.7">
+              Key locations will appear here as your story unfolds. Visited locations glow when mentioned in the narrative.
+            </div>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);max-width:360px;text-align:center;line-height:1.7">
-            As you generate chapters, key locations will be automatically extracted and mapped onto a procedurally generated world map.
+
+          <!-- Live map (shown after story starts) -->
+          <div class="map-live" id="mapLive" style="display:none">
+            <div class="map-header">
+              <div>
+                <div class="map-world-name" id="mapWorldName">The World</div>
+                <div class="map-world-desc" id="mapWorldDesc"></div>
+              </div>
+              <div class="map-stats">
+                <div class="map-stat"><div class="map-stat-dot" style="background:var(--accent-gold);box-shadow:0 0 5px rgba(232,197,109,0.5)"></div><span id="mapVisitedCount">0</span> visited</div>
+                <div class="map-stat"><div class="map-stat-dot" style="background:var(--border-light)"></div><span id="mapTotalCount">0</span> total</div>
+              </div>
+            </div>
+            <div class="map-canvas-wrap" id="mapCanvasWrap">
+              <svg id="worldMapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+            <div class="map-legend" id="mapLegend"></div>
           </div>
         </div>
       </div>
@@ -1436,7 +1576,8 @@ function switchMainTab(name) {
     document.getElementById('panel'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
   });
   if(name==='tree') renderTreeSVG();
-  if(name==='network') { setTimeout(renderNetwork, 60); } // wait for panel to be visible
+  if(name==='network') { setTimeout(renderNetwork, 60); }
+  if(name==='map') { setTimeout(renderWorldMap, 60); }
 }
 
 /* ══════════════════════════════════════════
@@ -1576,7 +1717,7 @@ function renderNetwork() {
       hint.textContent = `"${c ? c.name : '?'}" selected · Now click another character to connect`;
       hint.style.color = 'var(--accent-gold)';
     } else {
-      hint.textContent = 'Click a character to select · Click another to connect them';
+      hint.textContent = 'Long-press an avatar and drag to another to connect · Click to select';
       hint.style.color = '';
     }
   }
@@ -1622,42 +1763,180 @@ function renderNetwork() {
 }
 
 /* ── Node drag / click ── */
+/* ── Long-press drag-to-connect ── */
+let _connectMode = null;   // { fromId, liveLine, ring, chargeRing }
+let _lpTimer     = null;   // long-press setTimeout
+
 function _onNetMouseDown(e, charId) {
   if (e.button !== 0) return;
   e.preventDefault(); e.stopPropagation();
+  closeRelPopup();
+
   const pos = nodePositions[charId] || { x:0, y:0 };
-  _netDrag = { charId, mx0: e.clientX, my0: e.clientY, ox: pos.x, oy: pos.y, moved: false };
+  let gesture = 'pending'; // 'pending' | 'drag' | 'connect'
+  const sx = e.clientX, sy = e.clientY;
+
+  // Show charge ring immediately on hold
+  _showChargeRing(charId);
+
+  // Long-press fires after 420 ms if no big movement
+  _lpTimer = setTimeout(() => {
+    if (gesture === 'pending') {
+      gesture = 'connect';
+      _clearChargeRing();
+      _enterConnectMode(charId);
+    }
+  }, 420);
+
   const onMove = ev => {
-    if (!_netDrag) return;
-    const dist = Math.hypot(ev.clientX - _netDrag.mx0, ev.clientY - _netDrag.my0);
-    if (dist > 4) {
-      _netDrag.moved = true;
-      nodePositions[_netDrag.charId] = { x: _netDrag.ox + (ev.clientX - _netDrag.mx0), y: _netDrag.oy + (ev.clientY - _netDrag.my0) };
+    const dist = Math.hypot(ev.clientX - sx, ev.clientY - sy);
+    if (gesture === 'pending' && dist > 8) {
+      // Moved too much before long-press fired → treat as node drag
+      clearTimeout(_lpTimer); _lpTimer = null;
+      _clearChargeRing();
+      gesture = 'drag';
+    }
+    if (gesture === 'drag') {
+      nodePositions[charId] = { x: pos.x + (ev.clientX - sx), y: pos.y + (ev.clientY - sy) };
       renderNetwork();
     }
+    if (gesture === 'connect') {
+      _updateLiveLine(ev);
+    }
   };
+
   const onUp = ev => {
-    if (_netDrag && !_netDrag.moved) _onNetNodeClick(_netDrag.charId);
-    _netDrag = null;
+    clearTimeout(_lpTimer); _lpTimer = null;
+    _clearChargeRing();
+    if      (gesture === 'pending') _onNetNodeClick(charId);   // quick click
+    else if (gesture === 'connect') _handleConnectDrop(ev);    // drop
+    // gesture === 'drag' → already handled in onMove, nothing extra
     document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('mouseup',   onUp);
   };
+
   document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
+  document.addEventListener('mouseup',   onUp);
 }
 
+/* Charge ring: visual feedback during long-press hold */
+function _showChargeRing(charId) {
+  const svg = document.querySelector('.network-svg');
+  if (!svg) return;
+  const pos = nodePositions[charId] || {x:0,y:0};
+  const r = 34, circ = 2 * Math.PI * r; // ≈ 214
+  const cr = _svg('circle', { cx: pos.x, cy: pos.y, r,
+    fill:'none', stroke:'rgba(232,197,109,0.85)', 'stroke-width':'2.5',
+    'stroke-dasharray': circ, 'stroke-dashoffset': circ,
+    'stroke-linecap':'round', 'class':'charge-ring-el',
+  });
+  cr.dataset.chargeFor = charId;
+  svg.appendChild(cr);
+}
+function _clearChargeRing() {
+  document.querySelectorAll('.charge-ring-el').forEach(el => el.remove());
+}
+
+/* Enter connect mode */
+function _enterConnectMode(fromId) {
+  const svg = document.querySelector('.network-svg');
+  _connectMode = { fromId, liveLine: null, ring: null };
+
+  // Glow the source node
+  const node = document.querySelector(`.net-node[data-char-id="${fromId}"]`);
+  if (node) node.classList.add('connecting');
+
+  if (svg) {
+    // Animated dashed line (will be positioned on mousemove)
+    const line = _svg('line', {
+      'stroke':'rgba(232,197,109,0.85)', 'stroke-width':'2',
+      'stroke-dasharray':'7 5', 'class':'live-connect-line',
+      'marker-end':'url(#net-arr)',
+    });
+    svg.appendChild(line);
+    _connectMode.liveLine = line;
+
+    // Pulsing ring around source
+    const pos = nodePositions[fromId] || {x:0,y:0};
+    const ring = _svg('circle', { cx:pos.x, cy:pos.y, r:36,
+      fill:'none', stroke:'rgba(232,197,109,0.4)', 'stroke-width':'2',
+      'class':'connect-ring-el',
+    });
+    svg.appendChild(ring);
+    _connectMode.ring = ring;
+  }
+
+  // Update hint
+  const c = _getChar(fromId);
+  const hint = document.getElementById('networkHint');
+  if (hint) { hint.textContent = `Drag to another character to connect "${c?.name || '?'}" · Release to cancel`; hint.style.color = 'var(--accent-gold)'; }
+}
+
+function _updateLiveLine(e) {
+  if (!_connectMode?.liveLine) return;
+  const canvas = document.getElementById('networkCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const fpos = nodePositions[_connectMode.fromId] || {x:0,y:0};
+  const dx = mx - fpos.x, dy = my - fpos.y, dist = Math.hypot(dx, dy);
+  const NR = 33;
+  const sx = dist > NR ? fpos.x + dx/dist*NR : fpos.x;
+  const sy = dist > NR ? fpos.y + dy/dist*NR : fpos.y;
+  _connectMode.liveLine.setAttribute('x1', sx);
+  _connectMode.liveLine.setAttribute('y1', sy);
+  _connectMode.liveLine.setAttribute('x2', mx);
+  _connectMode.liveLine.setAttribute('y2', my);
+
+  // Highlight hover target
+  const tid = _getNodeAtPoint(mx, my);
+  document.querySelectorAll('.net-node.connect-target').forEach(n => n.classList.remove('connect-target'));
+  if (tid && tid !== _connectMode.fromId) {
+    const tn = document.querySelector(`.net-node[data-char-id="${tid}"]`);
+    if (tn) tn.classList.add('connect-target');
+  }
+}
+
+function _handleConnectDrop(e) {
+  const canvas = document.getElementById('networkCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const targetId = _getNodeAtPoint(mx, my);
+  const fromId = _connectMode?.fromId;
+  _exitConnectMode();
+  if (targetId && targetId !== fromId) {
+    openRelPopupCreate(fromId, targetId, canvas);
+  }
+}
+
+function _exitConnectMode() {
+  if (!_connectMode) return;
+  _connectMode.liveLine?.remove();
+  _connectMode.ring?.remove();
+  const node = document.querySelector(`.net-node[data-char-id="${_connectMode.fromId}"]`);
+  if (node) node.classList.remove('connecting');
+  document.querySelectorAll('.net-node.connect-target').forEach(n => n.classList.remove('connect-target'));
+  _connectMode = null;
+  const hint = document.getElementById('networkHint');
+  if (hint) { hint.textContent = 'Long-press an avatar and drag to another to connect · Click to select'; hint.style.color = ''; }
+}
+
+function _getNodeAtPoint(cx, cy) {
+  for (const char of _allNetChars()) {
+    const pos = nodePositions[String(char.id)];
+    if (pos && Math.hypot(cx - pos.x, cy - pos.y) <= 36) return String(char.id);
+  }
+  return null;
+}
+
+/* Short click = selection (kept as fallback) */
 function _onNetNodeClick(charId) {
   closeRelPopup();
   if (!selectedNetNode) {
     selectedNetNode = charId; renderNetwork(); return;
   }
-  if (selectedNetNode === charId) {
-    selectedNetNode = null; renderNetwork(); return;
-  }
-  // Two different nodes selected → open create modal
+  if (selectedNetNode === charId) { selectedNetNode = null; renderNetwork(); return; }
   const from = selectedNetNode, to = charId;
-  selectedNetNode = null;
-  renderNetwork();
+  selectedNetNode = null; renderNetwork();
   openRelPopupCreate(from, to, document.getElementById('networkCanvas'));
 }
 
@@ -2016,6 +2295,462 @@ let isGenerating = false;
 let storyStartTime = null;
 let chapterCount = 0;
 let totalWords = 0;
+let currentWorldConfig = null;
+
+/* ══════════════════════════════════════════
+   World Map State & Logic
+══════════════════════════════════════════ */
+let worldMapLocations = []; // [{name, type, visitedChapter, x, y}]
+let worldMapInitialized = false;
+
+const MAP_TYPE_CFG = {
+  water:   { fill:'#0d2840', stroke:'#2a6090', glow:'#4a9fd4', dim:'#1a3a5c', emoji:'🌊', label:'Water' },
+  forest:  { fill:'#0d2010', stroke:'#2a6020', glow:'#5ab83a', dim:'#1a3a1a', emoji:'🌲', label:'Forest' },
+  mountain:{ fill:'#28180a', stroke:'#6a4020', glow:'#c8843a', dim:'#3a2010', emoji:'⛰', label:'Mountain' },
+  dungeon: { fill:'#180a0a', stroke:'#5a1818', glow:'#d43030', dim:'#2a1010', emoji:'💀', label:'Dungeon' },
+  city:    { fill:'#1e1200', stroke:'#8a6020', glow:'#e8c56d', dim:'#2a1c00', emoji:'🏰', label:'Settlement' },
+  garden:  { fill:'#0a1a06', stroke:'#508030', glow:'#90c850', dim:'#142210', emoji:'🌸', label:'Garden' },
+  desert:  { fill:'#20180a', stroke:'#907040', glow:'#d4b060', dim:'#2e2010', emoji:'🏜', label:'Desert' },
+  magic:   { fill:'#150828', stroke:'#7030c0', glow:'#b87cff', dim:'#221040', emoji:'✨', label:'Mystical' },
+  default: { fill:'#0a0e1a', stroke:'#3a4070', glow:'#5b8dee', dim:'#141828', emoji:'📍', label:'Location' },
+};
+
+function detectLocationType(name) {
+  const n = (name || '').toLowerCase();
+  if (/lake|river|ocean|sea|water|stream|pool|shore|tide|bay/.test(n)) return 'water';
+  if (/forest|grove|wood|tree|jungle|glade|thicket/.test(n)) return 'forest';
+  if (/mountain|peak|hill|ridge|cliff|highland|summit|rock/.test(n)) return 'mountain';
+  if (/cave|dungeon|ruin|tomb|crypt|pit|abyss|shadow|dark/.test(n)) return 'dungeon';
+  if (/city|town|village|castle|keep|fort|palace|hall|inn|market/.test(n)) return 'city';
+  if (/garden|meadow|field|valley|plain|bloom|flower|grove|healing/.test(n)) return 'garden';
+  if (/desert|dune|sand|arid|waste|barren/.test(n)) return 'desert';
+  if (/magic|ancient|sacred|mystic|crystal|shrine|spirit|dream|moon|star|light/.test(n)) return 'magic';
+  return 'default';
+}
+
+function initWorldMap(worldConfig) {
+  if (!worldConfig) return;
+  currentWorldConfig = worldConfig;
+  const rawLocs = worldConfig?.setting?.key_locations || worldConfig?.key_locations || [];
+  if (!rawLocs.length) return;
+
+  worldMapLocations = rawLocs.map((name, i) => ({
+    name,
+    type: detectLocationType(name),
+    visitedChapter: null,
+  }));
+  worldMapInitialized = true;
+
+  // Update header
+  document.getElementById('mapWorldName').textContent = worldConfig.name || 'The World';
+  const desc = worldConfig.description || worldConfig?.setting?.atmosphere || '';
+  document.getElementById('mapWorldDesc').textContent = desc;
+  document.getElementById('mapTotalCount').textContent = worldMapLocations.length;
+  document.getElementById('mapVisitedCount').textContent = 0;
+
+  // Show live map, hide placeholder
+  document.getElementById('mapPlaceholder').style.display = 'none';
+  document.getElementById('mapLive').style.display = '';
+
+  renderWorldMap();
+}
+
+function updateLocationVisits(prose) {
+  if (!worldMapInitialized || !prose) return;
+  let changed = false;
+  worldMapLocations.forEach(loc => {
+    if (!loc.visitedChapter) {
+      // Case-insensitive partial match
+      const re = new RegExp(loc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      if (re.test(prose)) {
+        loc.visitedChapter = chapterCount || 1;
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    const visited = worldMapLocations.filter(l => l.visitedChapter).length;
+    document.getElementById('mapVisitedCount').textContent = visited;
+    if (document.getElementById('panelMap').classList.contains('active')) {
+      renderWorldMap();
+    }
+    updateMapLegend();
+  }
+}
+
+function renderWorldMap() {
+  const wrap = document.getElementById('mapCanvasWrap');
+  const svg = document.getElementById('worldMapSvg');
+  if (!wrap || !svg || !worldMapInitialized) return;
+
+  const W = wrap.clientWidth  || 600;
+  const H = wrap.clientHeight || 380;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const locs = worldMapLocations;
+  const n = locs.length;
+  if (!n) return;
+
+  // Calculate positions (Fibonacci / circular layout)
+  const cx = W / 2, cy = H / 2;
+  const rx = Math.min(W * 0.36, 220);
+  const ry = Math.min(H * 0.36, 140);
+  const positions = locs.map((loc, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    // Hash-based small jitter for naturalism
+    const hash = (loc.name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const jx = ((hash * 13) % 30) - 15;
+    const jy = ((hash * 7)  % 20) - 10;
+    return {
+      x: Math.round(cx + rx * Math.cos(angle) + jx),
+      y: Math.round(cy + ry * Math.sin(angle) + jy),
+    };
+  });
+
+  // Build paths between adjacent locations + cross
+  const pathPairs = [];
+  for (let i = 0; i < n; i++) pathPairs.push([i, (i + 1) % n]);
+  if (n >= 4) { pathPairs.push([0, 2]); pathPairs.push([1, 3 % n]); }
+
+  let svgContent = '';
+
+  // ── Defs (filters + gradients) ──
+  svgContent += `<defs>
+    <radialGradient id="mgBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%"   stop-color="#14162a"/>
+      <stop offset="100%" stop-color="#08090f"/>
+    </radialGradient>
+    <filter id="glow3" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow6" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow10" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>`;
+
+  // ── Background ──
+  svgContent += `<rect width="${W}" height="${H}" fill="url(#mgBg)"/>`;
+
+  // Subtle grid lines
+  const gridStep = 40;
+  for (let gx = 0; gx < W; gx += gridStep) {
+    svgContent += `<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="#ffffff" stroke-opacity="0.018" stroke-width="1"/>`;
+  }
+  for (let gy = 0; gy < H; gy += gridStep) {
+    svgContent += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="#ffffff" stroke-opacity="0.018" stroke-width="1"/>`;
+  }
+
+  // ── Terrain blobs (behind location) ──
+  locs.forEach((loc, i) => {
+    const p = positions[i];
+    const cfg = MAP_TYPE_CFG[loc.type] || MAP_TYPE_CFG.default;
+    const visited = !!loc.visitedChapter;
+    const blobR = 48 + (i % 3) * 8;
+    if (visited) {
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${blobR}" fill="${cfg.fill}" opacity="0.9" filter="url(#glow6)"/>`;
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${blobR - 8}" fill="${cfg.fill}" opacity="0.5"/>`;
+    } else {
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${blobR}" fill="${cfg.dim}" opacity="0.6"/>`;
+    }
+  });
+
+  // ── Paths ──
+  pathPairs.forEach(([a, b]) => {
+    if (a >= n || b >= n) return;
+    const pa = positions[a], pb = positions[b];
+    const visitedPath = locs[a].visitedChapter && locs[b].visitedChapter;
+    // Bezier control point (slight perpendicular offset for curves)
+    const midX = (pa.x + pb.x) / 2;
+    const midY = (pa.y + pb.y) / 2;
+    const dx = pb.x - pa.x, dy = pb.y - pa.y;
+    const dist = Math.hypot(dx, dy);
+    const nx = -dy / dist, ny = dx / dist;
+    const curve = dist * 0.12;
+    const cpx = midX + nx * curve, cpy = midY + ny * curve;
+    const d = `M${pa.x},${pa.y} Q${cpx},${cpy} ${pb.x},${pb.y}`;
+
+    if (visitedPath) {
+      svgContent += `<path d="${d}" fill="none" stroke="rgba(232,197,109,0.5)" stroke-width="1.5" filter="url(#glow3)"/>`;
+      svgContent += `<path d="${d}" fill="none" stroke="rgba(232,197,109,0.25)" stroke-width="3"/>`;
+    } else {
+      svgContent += `<path d="${d}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" stroke-dasharray="5,5"/>`;
+    }
+  });
+
+  // ── Location nodes ──
+  locs.forEach((loc, i) => {
+    const p = positions[i];
+    const cfg = MAP_TYPE_CFG[loc.type] || MAP_TYPE_CFG.default;
+    const visited = !!loc.visitedChapter;
+    const nodeR = visited ? 22 : 16;
+
+    if (visited) {
+      // Outer pulse ring
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${nodeR + 10}" fill="${cfg.glow}" opacity="0.08" filter="url(#glow10)"/>`;
+      // Glow circle
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${nodeR + 4}" fill="none" stroke="${cfg.glow}" stroke-width="1.5" opacity="0.5" filter="url(#glow6)"/>`;
+      // Main node
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="${cfg.fill}" stroke="${cfg.glow}" stroke-width="2" filter="url(#glow3)"/>`;
+      // Chapter badge
+      svgContent += `<circle cx="${p.x + nodeR - 2}" cy="${p.y - nodeR + 2}" r="7" fill="rgba(232,197,109,0.9)"/>`;
+      svgContent += `<text x="${p.x + nodeR - 2}" y="${p.y - nodeR + 6}" text-anchor="middle" font-size="7" font-weight="800" fill="#080a12">Ch${loc.visitedChapter}</text>`;
+    } else {
+      svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="${cfg.dim}" stroke="${cfg.stroke}" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.7"/>`;
+    }
+
+    // Emoji icon
+    const emojiSize = visited ? 14 : 11;
+    svgContent += `<text x="${p.x}" y="${p.y + emojiSize * 0.4}" text-anchor="middle" font-size="${emojiSize}" opacity="${visited ? 1 : 0.5}">${cfg.emoji}</text>`;
+
+    // Location name label
+    const nameY = p.y + nodeR + 14;
+    const nameParts = loc.name.split(' ');
+    const line1 = nameParts.slice(0, Math.ceil(nameParts.length / 2)).join(' ');
+    const line2 = nameParts.slice(Math.ceil(nameParts.length / 2)).join(' ');
+    const labelColor = visited ? cfg.glow : 'rgba(255,255,255,0.35)';
+    const labelWeight = visited ? '700' : '500';
+    const labelSize = Math.min(11, 140 / Math.max(loc.name.length, 1) + 6);
+
+    if (line2) {
+      svgContent += `<text x="${p.x}" y="${nameY}" text-anchor="middle" font-size="${labelSize}" font-weight="${labelWeight}" fill="${labelColor}" filter="${visited ? 'url(#glow3)' : ''}">${line1}</text>`;
+      svgContent += `<text x="${p.x}" y="${nameY + 13}" text-anchor="middle" font-size="${labelSize}" font-weight="${labelWeight}" fill="${labelColor}">${line2}</text>`;
+    } else {
+      svgContent += `<text x="${p.x}" y="${nameY}" text-anchor="middle" font-size="${labelSize}" font-weight="${labelWeight}" fill="${labelColor}" filter="${visited ? 'url(#glow3)' : ''}">${loc.name}</text>`;
+    }
+  });
+
+  // ── Compass rose (top-right) ──
+  const cRx = W - 36, cRy = 36, cRr = 14;
+  svgContent += `
+    <g opacity="0.35">
+      <line x1="${cRx}" y1="${cRy - cRr}" x2="${cRx}" y2="${cRy + cRr}" stroke="#e8c56d" stroke-width="1.5"/>
+      <line x1="${cRx - cRr}" y1="${cRy}" x2="${cRx + cRr}" y2="${cRy}" stroke="#e8c56d" stroke-width="1.5"/>
+      <polygon points="${cRx},${cRy - cRr - 4} ${cRx - 4},${cRy - cRr + 6} ${cRx + 4},${cRy - cRr + 6}" fill="#e8c56d"/>
+      <text x="${cRx}" y="${cRy - cRr - 7}" text-anchor="middle" font-size="8" fill="#e8c56d" font-weight="700">N</text>
+    </g>`;
+
+  svg.innerHTML = svgContent;
+  updateMapLegend();
+}
+
+function updateMapLegend() {
+  const legend = document.getElementById('mapLegend');
+  if (!legend || !worldMapInitialized) return;
+
+  const items = worldMapLocations.map((loc, i) => {
+    const cfg = MAP_TYPE_CFG[loc.type] || MAP_TYPE_CFG.default;
+    const visited = !!loc.visitedChapter;
+    const chLabel = visited ? `<span class="map-legend-chapter">Ch.${loc.visitedChapter}</span>` : '';
+    return `<div class="map-legend-item ${visited ? 'visited' : ''}" onclick="highlightMapLocation(${i})">
+      <div class="map-legend-dot" style="background:${visited ? cfg.glow : cfg.stroke};box-shadow:${visited ? `0 0 5px ${cfg.glow}66` : 'none'}"></div>
+      <span>${cfg.emoji} ${loc.name}</span>${chLabel}
+    </div>`;
+  });
+
+  legend.innerHTML = `<span class="map-legend-title">Locations</span>${items.join('')}`;
+}
+
+function highlightMapLocation(idx) {
+  // Flash highlight on the location in the SVG
+  const svg = document.getElementById('worldMapSvg');
+  if (!svg) return;
+  // Just switch to map tab if not already there
+  switchMainTab('map');
+}
+
+/* ══════════════════════════════════════════
+   Branch Mode
+══════════════════════════════════════════ */
+let currentBranchMode = 'choose';
+let selectedPreviewIdx = null;
+let selectedPreviewData = null;
+let directorPreviewData = null;
+
+function setBranchMode(mode) {
+  currentBranchMode = mode;
+  ['choose', 'preview', 'director'].forEach(m => {
+    const btn = document.getElementById(`bm${m[0].toUpperCase()}${m.slice(1)}`);
+    const panel = document.getElementById(`branchMode${m[0].toUpperCase()}${m.slice(1)}`);
+    if (btn) btn.classList.toggle('active', m === mode);
+    if (panel) panel.style.display = m === mode ? '' : 'none';
+  });
+
+  if (mode === 'preview' && !document.getElementById('branchPreviews').children.length) {
+    generateBranchPreviews();
+  }
+}
+
+/* ══════════════════════════════════════════
+   Branch Previews
+══════════════════════════════════════════ */
+async function generateBranchPreviews() {
+  const container = document.getElementById('branchPreviews');
+  if (!container) return;
+  container.innerHTML = `<div class="branch-preview-loading">
+    <div class="typing-indicator"><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div></div>
+    Director is writing two versions of what happens next…
+  </div>`;
+  document.getElementById('previewContinueBar').style.display = 'none';
+  selectedPreviewIdx = null;
+  selectedPreviewData = null;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/story/generate-branch-previews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: currentSessionId }),
+    });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const d = await r.json();
+    renderBranchPreviews(d.previews || []);
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;grid-column:1/-1">Could not generate previews (${e.message}). <button class="btn btn-ghost btn-xs" onclick="generateBranchPreviews()">Retry</button></div>`;
+  }
+}
+
+function renderBranchPreviews(previews) {
+  const container = document.getElementById('branchPreviews');
+  if (!container) return;
+  container.innerHTML = previews.map((p, i) => `
+    <div class="preview-card" id="previewCard${i}" onclick="selectPreview(${i})">
+      <div class="preview-card-head">
+        <div class="preview-card-badge">Path ${p.id || String.fromCharCode(65+i)}</div>
+        <div class="preview-card-tone">${p.tone || ''}</div>
+      </div>
+      <div class="preview-card-title">${p.title || ''}</div>
+      <div class="preview-card-prose" id="previewProse${i}">${proseToHtml(p.prose || '')}</div>
+      <button class="preview-expand-btn" id="previewExpandBtn${i}" onclick="togglePreviewExpand(event,${i})">▼ Read more</button>
+    </div>`).join('');
+}
+
+function selectPreview(idx) {
+  const previews = document.querySelectorAll('.preview-card');
+  previews.forEach((c, i) => c.classList.toggle('selected', i === idx));
+  selectedPreviewIdx = idx;
+  const cards = document.querySelectorAll('.preview-card');
+  if (cards[idx]) {
+    const prose = cards[idx].querySelector('.preview-card-prose');
+    const title = cards[idx].querySelector('.preview-card-title');
+    selectedPreviewData = {
+      title: title ? title.textContent : '',
+      prose: prose ? prose.innerText : '',
+    };
+  }
+  document.getElementById('previewContinueBar').style.display = 'flex';
+}
+
+function togglePreviewExpand(e, idx) {
+  e.stopPropagation();
+  const card = document.getElementById(`previewCard${idx}`);
+  const prose = document.getElementById(`previewProse${idx}`);
+  const btn = document.getElementById(`previewExpandBtn${idx}`);
+  if (!card || !prose) return;
+  const expanded = prose.classList.toggle('expanded');
+  card.classList.toggle('expanded', expanded);
+  if (btn) btn.textContent = expanded ? '▲ Collapse' : '▼ Read more';
+}
+
+function continueWithPreview() {
+  if (!selectedPreviewData) return;
+  generateNextChapter(selectedPreviewData.title, selectedPreviewData.prose);
+}
+
+/* ══════════════════════════════════════════
+   Director Chat
+══════════════════════════════════════════ */
+async function sendDirectorMessage() {
+  const input = document.getElementById('directorChatInput');
+  const msg = input ? input.value.trim() : '';
+  if (!msg || !currentSessionId) return;
+  if (isGenerating) { showToast('Please wait until generation completes','info'); return; }
+
+  // Show user message
+  const messagesEl = document.getElementById('directorMessages');
+  const userMsgEl = document.createElement('div');
+  userMsgEl.className = 'director-msg';
+  userMsgEl.style.cssText = 'background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.18);';
+  userMsgEl.innerHTML = `<div style="font-size:10px;font-weight:800;color:var(--accent-blue);letter-spacing:0.06em;margin-bottom:4px">🎬 YOUR DIRECTION</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.6">${msg}</div>`;
+  messagesEl.appendChild(userMsgEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  if (input) input.value = '';
+
+  // Disable button
+  const sendBtn = document.getElementById('directorSendBtn');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
+
+  // Show loading
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'director-msg director';
+  loadingEl.innerHTML = `<div class="dm-sender">🎭 DIRECTOR</div><div class="typing-indicator" style="padding:4px 0"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  messagesEl.appendChild(loadingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/story/director-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: currentSessionId, message: msg }),
+    });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const d = await r.json();
+    loadingEl.remove();
+    renderDirectorResponse(d, messagesEl);
+  } catch(e) {
+    loadingEl.remove();
+    const errEl = document.createElement('div');
+    errEl.className = 'director-msg director';
+    errEl.innerHTML = `<div class="dm-sender">⚠ ERROR</div><div style="color:var(--accent-rose)">${e.message}</div>`;
+    messagesEl.appendChild(errEl);
+  }
+
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderDirectorResponse(data, messagesEl) {
+  const uid = 'dc' + Date.now();
+
+  // Director's acknowledgment
+  const dirMsgEl = document.createElement('div');
+  dirMsgEl.className = 'director-msg director';
+  dirMsgEl.innerHTML = `<div class="dm-sender">🎭 DIRECTOR</div><div>${data.director_response || ''}</div>`;
+  messagesEl.appendChild(dirMsgEl);
+
+  // Preview prose
+  const previewEl = document.createElement('div');
+  previewEl.className = 'director-msg preview';
+  previewEl.id = uid;
+  previewEl.innerHTML = `
+    <div class="dm-preview-title">📜 ${data.title || 'Custom Version'} <span style="font-size:9px;font-weight:600;background:rgba(91,141,238,0.12);color:var(--accent-blue);padding:2px 6px;border-radius:8px;margin-left:6px">${data.tone || ''}</span></div>
+    <div class="dm-preview-prose">${proseToHtml(data.prose || '')}</div>
+    <div class="dm-actions">
+      <button class="preview-expand-btn" onclick="toggleDirectorPreview('${uid}')">▼ Read full preview</button>
+      <button class="btn btn-primary btn-xs" onclick="useDirectorVersion('${escStr(data.title)}','${escStr(data.prose)}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Use This Version
+      </button>
+    </div>`;
+  messagesEl.appendChild(previewEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function toggleDirectorPreview(uid) {
+  const el = document.getElementById(uid);
+  if (!el) return;
+  const expanded = el.classList.toggle('expanded');
+  const btn = el.querySelector('.preview-expand-btn');
+  if (btn) btn.textContent = expanded ? '▲ Collapse' : '▼ Read full preview';
+}
+
+function useDirectorVersion(title, prose) {
+  generateNextChapter(title, prose);
+}
 
 function proseToHtml(prose) {
   return '<p>'+prose.split(/\n\n+/).map(p=>p.trim()).filter(Boolean).join('</p><p>')+'</p>';
@@ -2058,6 +2793,7 @@ async function startStory() {
     const sd=await res.json();
     currentSessionId=sd.session_id;
     addLogMsg({sender:'🌍 World Builder',cls:'director',text:sd.world?.description||sd.world?.setting?.atmosphere||'World initialized'});
+    initWorldMap(sd.world);
     setProgress(10,'Generating Chapter 1…');
     await generateNextChapter(null, null);
   } catch(e){
@@ -2105,6 +2841,8 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
         }
         appendSceneBlock(data.scene_number, data.scene_title, data.prose, data.tension_level, data.is_decision_point);
         setTension(data.tension_level||0, data.scene_title||'');
+        // Update world map visits
+        if (data.prose) updateLocationVisits(data.prose);
       } else if(eventType==='chapter'){
         chapterData=data;
       }
@@ -2147,6 +2885,13 @@ async function generateBranchChoices() {
   const bc=document.getElementById('branchCards');
   bc.innerHTML='<div class="branch-loading"><div class="typing-indicator"><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div></div> Agents are debating what should happen next…</div>';
   document.getElementById('branchSection').style.display='block';
+
+  // Reset other modes
+  setBranchMode('choose');
+  document.getElementById('branchPreviews').innerHTML = '';
+  document.getElementById('previewContinueBar').style.display = 'none';
+  document.getElementById('directorMessages').innerHTML = '';
+  selectedPreviewIdx = null; selectedPreviewData = null; directorPreviewData = null;
 
   try {
     const r=await fetch(`${API_BASE}/api/story/generate-choices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSessionId,num_choices:3})});
@@ -2294,6 +3039,12 @@ function exportStory(){
 function clearAll(){
   storyTree.nodes={}; storyTree.rootId=null; storyTree.currentId=null; nodeCounter=0;
   currentSessionId=null; isGenerating=false; chapterCount=0; totalWords=0; storyStartTime=null;
+  currentWorldConfig=null; worldMapLocations=[]; worldMapInitialized=false;
+  selectedPreviewIdx=null; selectedPreviewData=null; directorPreviewData=null; currentBranchMode='choose';
+  document.getElementById('mapPlaceholder').style.display='';
+  document.getElementById('mapLive').style.display='none';
+  const mapSvg=document.getElementById('worldMapSvg'); if(mapSvg) mapSvg.innerHTML='';
+  const mapLegend=document.getElementById('mapLegend'); if(mapLegend) mapLegend.innerHTML='';
   document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">📖</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
   document.getElementById('branchSection').style.display='none';
   document.getElementById('logMessages').innerHTML='<div class="log-empty">No dialogue yet.</div>';
@@ -2329,6 +3080,14 @@ function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 ══════════════════════════════════════════ */
 renderCharacters();
 initSetup();
+
+// ESC cancels connect mode or deselects
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (_connectMode) { clearTimeout(_lpTimer); _lpTimer = null; _clearChargeRing(); _exitConnectMode(); }
+    else if (selectedNetNode) { selectedNetNode = null; renderNetwork(); }
+  }
+});
 </script>
 </body>
 </html>
