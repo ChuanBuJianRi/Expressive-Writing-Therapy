@@ -324,6 +324,11 @@
       transition: background 0.12s;
     }
     .rel-label-badge:hover { background: rgba(91,141,238,0.12); }
+    .rel-label-badge.rel-auto {
+      border-color: rgba(62,201,167,0.4); color: var(--accent-teal);
+      background: rgba(62,201,167,0.07);
+    }
+    .rel-label-badge.rel-auto::before { content: '✦ '; font-size: 8px; }
     /* Relationship modal (floats inside network canvas) */
     .rel-popup {
       background: var(--bg-card); border: 1px solid var(--border-light);
@@ -1657,6 +1662,10 @@ function renderNetwork() {
   marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);
 
   // ── Draw edges ──
+  // Each relationship is always a directed edge (fromId → toId).
+  // If A→B and B→A both exist, offset them perpendicular so they don't overlap.
+  canvas.querySelectorAll('.net-rel-label').forEach(l => l.remove());
+
   relationships.forEach(rel => {
     const fp = nodePositions[String(rel.fromId)];
     const tp = nodePositions[String(rel.toId)];
@@ -1666,50 +1675,38 @@ function renderNetwork() {
     const dist = Math.hypot(dx, dy);
     if (dist < 1) return;
     const nx = dx/dist, ny = dy/dist;
-    const NR = 33; // node radius + margin
+    const NR = 33;
 
-    // Forward arrow (from → to)
-    if (rel.direction !== 'backward') {
-      const x1 = fp.x + nx * NR, y1 = fp.y + ny * NR;
-      const x2 = tp.x - nx * (NR+2), y2 = tp.y - ny * (NR+2);
-      const line = _svg('line', { x1, y1, x2, y2, stroke:'rgba(91,141,238,0.65)', 'stroke-width':'1.8', 'marker-end':'url(#net-arr)' });
-      svg.appendChild(line);
-      // Invisible thick hit area
-      const hit = _svg('line', { x1, y1, x2, y2, stroke:'transparent', 'stroke-width':'14' });
-      hit.style.cursor = 'pointer'; hit.style.pointerEvents = 'stroke';
-      hit.addEventListener('click', (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
-      svg.appendChild(hit);
-    }
+    // Offset if reverse relationship also exists
+    const hasReverse = relationships.some(r =>
+      String(r.fromId) === String(rel.toId) && String(r.toId) === String(rel.fromId)
+    );
+    const off = hasReverse ? 7 : 0;
+    const px = -ny * off, py = nx * off;
 
-    // Backward arrow (to → from), offset slightly so both lines are visible
-    if (rel.direction !== 'forward') {
-      const off = rel.direction === 'both' ? 7 : 0;
-      const px = -ny * off, py = nx * off;
-      const x1 = tp.x - nx * NR + px, y1 = tp.y - ny * NR + py;
-      const x2 = fp.x + nx * (NR+2) + px, y2 = fp.y + ny * (NR+2) + py;
-      const line = _svg('line', { x1, y1, x2, y2, stroke:'rgba(91,141,238,0.65)', 'stroke-width':'1.8', 'marker-end':'url(#net-arr)' });
-      svg.appendChild(line);
-      const hit = _svg('line', { x1, y1, x2, y2, stroke:'transparent', 'stroke-width':'14' });
-      hit.style.cursor = 'pointer'; hit.style.pointerEvents = 'stroke';
-      hit.addEventListener('click', (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
-      svg.appendChild(hit);
-    }
+    const x1 = fp.x + nx * NR + px,     y1 = fp.y + ny * NR + py;
+    const x2 = tp.x - nx * (NR+3) + px, y2 = tp.y - ny * (NR+3) + py;
 
-  }); // end relationships.forEach — labels rendered as HTML below
+    // Arrow line
+    const strokeColor = rel.auto ? 'rgba(62,201,167,0.7)' : 'rgba(91,141,238,0.7)';
+    const line = _svg('line', { x1, y1, x2, y2, stroke: strokeColor, 'stroke-width':'1.8', 'marker-end':'url(#net-arr)' });
+    svg.appendChild(line);
 
-  // ── Relationship labels as HTML divs (not SVG foreignObject) ──
-  canvas.querySelectorAll('.net-rel-label').forEach(l => l.remove());
-  relationships.forEach(rel => {
-    const fp = nodePositions[String(rel.fromId)];
-    const tp = nodePositions[String(rel.toId)];
-    if (!fp || !tp) return;
-    const mx = (fp.x + tp.x) / 2, my = (fp.y + tp.y) / 2;
+    // Thick transparent hit area for clicking
+    const hit = _svg('line', { x1, y1, x2, y2, stroke:'transparent', 'stroke-width':'14' });
+    hit.style.cursor = 'pointer'; hit.style.pointerEvents = 'stroke';
+    hit.addEventListener('click', e => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
+    svg.appendChild(hit);
+
+    // Label as HTML div (midpoint of arrow, same offset)
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const lbl = document.createElement('div');
-    lbl.className = 'rel-label-badge net-rel-label';
+    lbl.className = 'rel-label-badge net-rel-label' + (rel.auto ? ' rel-auto' : '');
     lbl.textContent = rel.label;
+    lbl.title = rel.auto ? 'AI-inferred · click to edit' : 'click to edit';
     lbl.style.cssText = `position:absolute;left:${mx}px;top:${my}px;transform:translate(-50%,-50%);z-index:6;cursor:pointer;pointer-events:auto`;
     lbl.addEventListener('click', e => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
-    lbl.addEventListener('mousedown', e => e.stopPropagation()); // don't trigger node drag
+    lbl.addEventListener('mousedown', e => e.stopPropagation());
     canvas.appendChild(lbl);
   });
 
@@ -2024,27 +2021,62 @@ function _setRelDir(btn, dir) {
   btn.classList.add('active');
 }
 
+function _upsertRel(fromId, toId, label) {
+  // Update existing A→B if present, otherwise create new directed edge
+  const ex = relationships.find(r => String(r.fromId)===String(fromId) && String(r.toId)===String(toId));
+  if (ex) { ex.label = label; ex.auto = false; return 'updated'; }
+  relationships.push({ id: 'rel'+(netRelIdSeq++), fromId, toId, label, auto: false });
+  return 'created';
+}
+
 function _saveRel() {
   if (!_relPopup) return;
   const label = (document.getElementById('relLabelInput')?.value || '').trim();
   if (!label) { showToast('Enter a relationship label','error'); return; }
   const dir = _relPopup.dir || 'both';
-  if (_relPopup.relId) {
-    // Edit existing
-    const rel = relationships.find(r => r.id === _relPopup.relId);
-    if (rel) { rel.label = label; rel.direction = dir; }
+  const { fromId, toId, relId } = _relPopup;
+
+  if (relId) {
+    // Edit existing single edge
+    const rel = relationships.find(r => r.id === relId);
+    if (rel) { rel.label = label; rel.auto = false; }
   } else {
-    // Check for duplicate
-    const dup = relationships.find(r =>
-      (String(r.fromId)===String(_relPopup.fromId) && String(r.toId)===String(_relPopup.toId)) ||
-      (String(r.fromId)===String(_relPopup.toId)   && String(r.toId)===String(_relPopup.fromId))
-    );
-    if (dup) { showToast('A connection already exists — click the label to edit it','info'); closeRelPopup(); return; }
-    relationships.push({ id: 'rel'+(netRelIdSeq++), fromId: _relPopup.fromId, toId: _relPopup.toId, label, direction: dir });
-    showToast(`Connected!`, 'success');
+    // Create / update directed edge(s) based on chosen direction
+    if (dir === 'forward' || dir === 'both') _upsertRel(fromId, toId, label);
+    if (dir === 'backward' || dir === 'both') _upsertRel(toId, fromId, label);
+    showToast('Connected!', 'success');
   }
   closeRelPopup();
   renderNetwork();
+}
+
+/* Auto-inferred relationship merge (from backend AI extraction) */
+function mergeAutoRelationships(aiRels) {
+  if (!aiRels || !aiRels.length) return;
+  let added = 0;
+  aiRels.forEach(nr => {
+    const fid = String(nr.fromId), tid = String(nr.toId);
+    // Only add if neither direction exists yet (don't overwrite manual ones)
+    const existsFwd = relationships.some(r => String(r.fromId)===fid && String(r.toId)===tid);
+    if (!existsFwd) {
+      relationships.push({ id:'rel'+(netRelIdSeq++), fromId:fid, toId:tid, label:nr.label, auto:true });
+      added++;
+    }
+  });
+  if (added > 0) {
+    renderNetwork();
+    showToast(`Relationship map updated (${added} new)`, 'info');
+  }
+}
+
+async function fetchAutoRelationships() {
+  if (!currentSessionId) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/story/relationships/${currentSessionId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.relationships) mergeAutoRelationships(d.relationships);
+  } catch(e) { /* silently ignore */ }
 }
 
 function _deleteRel(relId) {
@@ -2878,6 +2910,8 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
       renderTreeSVG();
       setProgress(85,'Generating choices…');
       await generateBranchChoices();
+      // Auto-update character relationship network
+      fetchAutoRelationships();
     }
 
     setProgress(100,'Done!');

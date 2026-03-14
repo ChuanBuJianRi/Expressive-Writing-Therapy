@@ -655,6 +655,59 @@ def get_status(session_id: str):
     })
 
 
+@story_bp.route("/relationships/<session_id>", methods=["GET"])
+def get_relationships(session_id):
+    """Extract character relationships from the current story using LLM."""
+    story = _stories.get(session_id)
+    if not story:
+        sess = get_session(session_id)
+        if not sess:
+            return jsonify({"error": "session not found"}), 404
+        story = _stories.get(session_id)
+    if not story or not story.chapters:
+        return jsonify({"relationships": []})
+
+    # Use last 2 chapters for context
+    prose_chunks = []
+    for ch in story.chapters[-2:]:
+        prose_chunks.append(f"Chapter {ch.chapter_number} — {ch.title}:\n{ch.prose[:600]}")
+    prose = "\n\n".join(prose_chunks)
+
+    chars = [{"id": c["id"], "name": c["name"]} for c in story.all_characters]
+
+    prompt = (
+        f"Characters: {json.dumps(chars, ensure_ascii=False)}\n\n"
+        f"Story excerpt:\n{prose}\n\n"
+        "Based on this story, infer the current emotional/social relationship between characters.\n"
+        "Each relationship is DIRECTED (A→B reflects A's feeling toward B).\n"
+        "If A and B have DIFFERENT feelings toward each other, list them as two separate entries.\n"
+        "Use short labels (1-3 words), e.g.: 'trusts', 'secretly loves', 'fears', 'rivals', 'mentors', 'resents'.\n\n"
+        "Output JSON:\n"
+        '{"relationships": [{"fromId": "id", "toId": "id", "label": "..."}]}\n'
+        "Only include relationships clearly shown in the text. Max 12 entries."
+    )
+
+    try:
+        response = chat_json(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+        )
+        data = json.loads(response)
+        rels = data.get("relationships", [])
+        # Validate: both ids must be known characters
+        known_ids = {str(c["id"]) for c in story.all_characters}
+        rels = [
+            r for r in rels
+            if str(r.get("fromId")) in known_ids and str(r.get("toId")) in known_ids
+               and r.get("label")
+        ]
+        log.info("Extracted %d relationships for session %s", len(rels), session_id)
+        return jsonify({"relationships": rels})
+    except Exception as e:
+        log.error("Relationship extraction failed: %s", e)
+        return jsonify({"relationships": []})
+
+
 @story_bp.route("/generate-avatar", methods=["POST"])
 def generate_avatar():
     """Generate a character avatar image using DALL-E 3.
