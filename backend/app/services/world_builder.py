@@ -15,17 +15,16 @@ The world should be:
 
 Output a JSON object with this structure:
 {
-  "name": "世界名称",
-  "name_en": "World Name in English",
-  "description": "一段描述这个世界的文字",
+  "name": "World name",
+  "description": "A vivid description of this world in 2-3 sentences",
   "setting": {
-    "time_period": "时间设定",
-    "atmosphere": "氛围关键词",
-    "key_locations": ["地点1", "地点2", "地点3", "地点4"],
-    "rules": "这个世界的核心规则或逻辑",
-    "therapeutic_elements": "这个世界如何促进心理治愈"
+    "time_period": "Time period / era",
+    "atmosphere": "Atmosphere keywords",
+    "key_locations": ["Location 1", "Location 2", "Location 3", "Location 4"],
+    "rules": "The core rules or logic of this world",
+    "therapeutic_elements": "How this world facilitates psychological healing"
   },
-  "tags": ["标签1", "标签2"]
+  "tags": ["tag1", "tag2"]
 }
 
 Respond ONLY with the JSON object, no additional text."""
@@ -35,11 +34,11 @@ def build_world(theme: str, tags: list[str] = None, custom_setting: str = "") ->
     """Generate a world configuration from user input (LLM Call #1)."""
     log.info("Building world for theme: %s", theme)
 
-    user_msg = f"主题: {theme}\n"
+    user_msg = f"Theme: {theme}\n"
     if tags:
-        user_msg += f"风格标签: {', '.join(tags)}\n"
+        user_msg += f"Style tags: {', '.join(tags)}\n"
     if custom_setting:
-        user_msg += f"自定义设定: {custom_setting}\n"
+        user_msg += f"Custom setting notes: {custom_setting}\n"
 
     response = chat_json(
         messages=[
@@ -55,16 +54,15 @@ def build_world(theme: str, tags: list[str] = None, custom_setting: str = "") ->
         log.error("Failed to parse world config JSON: %s", response[:200])
         world_config = {
             "name": theme,
-            "name_en": theme,
             "description": response[:500],
             "setting": {
                 "time_period": "contemporary",
                 "atmosphere": "reflective",
-                "key_locations": ["起点", "旅途", "目的地", "归处"],
-                "rules": "故事随角色的内心变化而展开。",
-                "therapeutic_elements": "通过叙事探索内心世界。",
+                "key_locations": ["The Beginning", "The Journey", "The Turning Point", "The Return"],
+                "rules": "The world shifts with the inner lives of those who inhabit it.",
+                "therapeutic_elements": "Through narrative, characters explore and transform their inner world.",
             },
-            "tags": tags or ["治愈"],
+            "tags": tags or ["healing"],
         }
 
     log.info("World built: %s", world_config.get("name", "unknown"))

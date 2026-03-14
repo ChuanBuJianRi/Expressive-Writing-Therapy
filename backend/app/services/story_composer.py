@@ -9,21 +9,22 @@ COMPOSER_SYSTEM_PROMPT = """You are the Story Composer for a therapeutic narrati
 Transform raw character actions and Director notes into beautiful literary prose.
 
 Writing guidelines:
-1. Write in Chinese (中文), literary but accessible — aim for the quality of contemporary literary fiction
+1. Write in English — literary, evocative, and emotionally precise
 2. Third-person narration; weave internal monologue subtly into the flow
 3. Each character's actions, gestures, and words should feel distinct and true to their personality
-4. Scene atmosphere should permeate every paragraph
+4. Scene atmosphere should permeate every paragraph — light, texture, sound, silence
 5. If this is a DECISION POINT scene, end the prose at the moment of maximum tension —
    stop just before the character makes the crucial choice, leaving the reader breathless
-6. No headers, no bullet points, no meta-commentary — pure prose only
+6. No headers, no bullet points, no meta-commentary — pure prose paragraphs only
 7. Maintain therapeutic resonance: conflict opens understanding, not just drama
+8. Quality benchmark: contemporary literary fiction — think Kazuo Ishiguro, Celeste Ng
 
 Do NOT output JSON or any structured data. Write the scene prose directly."""
 
 LENGTH_SPECS = {
-    "brief":    ("100-200字", 512),
-    "medium":   ("250-450字", 1024),
-    "detailed": ("500-900字", 2048),
+    "brief":    ("100-200 words", 512),
+    "medium":   ("250-450 words", 1024),
+    "detailed": ("500-900 words", 2048),
 }
 
 
@@ -52,38 +53,39 @@ def compose_scene(
 
     actions_text = ""
     for action in character_actions:
-        actions_text += f"\n【{action.character_name}】\n"
-        actions_text += f"  行动: {action.public_action}\n"
-        actions_text += f"  内心: {action.private_thought}\n"
+        actions_text += f"\n[{action.character_name}]\n"
+        actions_text += f"  Action:  {action.public_action}\n"
+        actions_text += f"  Thought: {action.private_thought}\n"
         if action.dialogue:
-            actions_text += f"  台词: \"{action.dialogue}\"\n"
+            actions_text += f"  Dialogue: \"{action.dialogue}\"\n"
         if action.emotional_state:
-            actions_text += f"  情感: {action.emotional_state}\n"
+            actions_text += f"  Emotion: {action.emotional_state}\n"
         if action.growth_moment:
-            actions_text += f"  成长瞬间: {action.growth_moment}\n"
+            actions_text += f"  Growth: {action.growth_moment}\n"
 
     decision_note = (
-        "\n⚡ 重要: 这是决策点场景。在张力最高峰时戛然而止，"
-        "以一个悬而未决的瞬间结束——读者将决定接下来发生什么。"
-        "结尾不要解决任何冲突，只是把选择摆在读者面前。"
+        "\n⚡ IMPORTANT: This is a DECISION POINT scene. "
+        "End the prose at the peak of tension — stop at the precipice, not after the leap. "
+        "Do not resolve the conflict. Leave the reader holding their breath, "
+        "poised at the moment just before everything changes."
         if is_decision_point else ""
     )
 
     user_msg = (
-        f"请将以下场景整合为连贯的故事叙述。\n\n"
-        f"场景信息:\n"
-        f"- 第{chapter_number}章 · 场景{scene_plan.scene_number}:「{scene_plan.title}」\n"
-        f"- 场景描述: {scene_plan.description}\n"
-        f"- 张力等级: {scene_plan.tension_level:.0%}\n"
-        f"- 导演场景设定: {scene_setup}\n"
-        f"- 氛围: {atmosphere}\n"
-        f"- 治疗意图: {therapeutic_intention}"
+        f"Compose a cohesive scene narrative from the following material.\n\n"
+        f"Scene information:\n"
+        f"- Chapter {chapter_number} · Scene {scene_plan.scene_number}: \"{scene_plan.title}\"\n"
+        f"- Scene description: {scene_plan.description}\n"
+        f"- Tension level: {scene_plan.tension_level:.0%}\n"
+        f"- Director's staging: {scene_setup}\n"
+        f"- Atmosphere: {atmosphere}\n"
+        f"- Therapeutic intention: {therapeutic_intention}"
         f"{decision_note}\n\n"
-        f"世界: {world_config.get('name', '')} — {world_config.get('description', '')[:150]}\n\n"
-        f"角色行动:\n{actions_text}\n\n"
-        f"请写出这一场景的故事正文（约{word_range}）。\n"
-        f"文字要有文学质感，情感层次丰富，叙事流畅自然。\n"
-        f"只输出故事正文，不需要任何标题或说明。"
+        f"World: {world_config.get('name', '')} — {world_config.get('description', '')[:150]}\n\n"
+        f"Character actions:\n{actions_text}\n\n"
+        f"Write the scene prose ({word_range}).\n"
+        f"Make it literary, emotionally layered, and narratively fluid.\n"
+        f"Output only the scene prose — no titles, no headings, no commentary."
     )
 
     prose = chat(

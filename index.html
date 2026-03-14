@@ -1288,7 +1288,7 @@ function buildKeywordPicker(categories) {
   picker.innerHTML = cats.map(cat=>`
     <div class="kp-category">
       <div class="kp-cat-label">${cat.name}</div>
-      <div class="kp-chips">${cat.words.map(w=>`<span class="kp-chip${selectedKeywords.has(w)?' active':''}" onclick="toggleKw(this,'${w.replace(/'/g,"\\'")}'')">${w}</span>`).join('')}</div>
+      <div class="kp-chips">${cat.words.map(w=>`<span class="kp-chip${selectedKeywords.has(w)?' active':''}" onclick="toggleKw(this,'${w.replace(/'/g,"\\'")}')">${w}</span>`).join('')}</div>
     </div>`).join('') +
     `<div class="kp-footer">
       <span class="kp-count" id="kwCount">${selectedKeywords.size} selected</span>

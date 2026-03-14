@@ -21,11 +21,11 @@ Output a JSON object:
   "chapters": [
     {
       "chapter_number": 1,
-      "title": "章节标题",
-      "summary": "这一章的大纲，关键事件和情感走向",
+      "title": "Chapter title in English",
+      "summary": "Chapter outline — key events and emotional arc",
       "conflict_level": 0.3,
       "despair_level": 0.2,
-      "key_events": ["事件1", "事件2"]
+      "key_events": ["Event 1", "Event 2"]
     }
   ]
 }
@@ -41,11 +41,11 @@ Based on the story so far and the user's choice, plan ONE new chapter that conti
 Output a JSON object for a SINGLE chapter:
 {
   "chapter_number": <next number>,
-  "title": "章节标题（体现用户选择的方向）",
-  "summary": "这一章的大纲，紧密结合用户的选择",
+  "title": "Chapter title reflecting the user's chosen direction",
+  "summary": "Chapter outline closely following the user's choice",
   "conflict_level": <float 0.0-1.0>,
   "despair_level": <float 0.0-1.0>,
-  "key_events": ["事件1", "事件2", "事件3"]
+  "key_events": ["Event 1", "Event 2", "Event 3"]
 }
 
 Respond ONLY with the JSON object."""
@@ -66,15 +66,15 @@ def plan_chapters(
         for c in characters
     ]
 
-    hint_line = f"\n章节长度偏好: {chapter_length_hint}" if chapter_length_hint else ""
+    hint_line = f"\nChapter length preference: {chapter_length_hint}" if chapter_length_hint else ""
 
     user_msg = (
-        f"故事主题: {theme}\n"
-        f"章节数量: {num_chapters}"
+        f"Story theme: {theme}\n"
+        f"Number of chapters: {num_chapters}"
         f"{hint_line}\n\n"
-        f"世界设定:\n{json.dumps(world_config, ensure_ascii=False, indent=2)}\n\n"
-        f"角色列表:\n{chr(10).join(char_summaries)}\n\n"
-        f"请规划 {num_chapters} 个章节的故事大纲。"
+        f"World configuration:\n{json.dumps(world_config, ensure_ascii=False, indent=2)}\n\n"
+        f"Characters:\n{chr(10).join(char_summaries)}\n\n"
+        f"Plan the story arc for {num_chapters} chapters."
     )
 
     response = chat_json(
@@ -119,17 +119,17 @@ def extend_story(
 
     prev_prose = ""
     for ch in previous_chapters[-2:]:
-        prev_prose += f"\n--- 第{ch.get('chapter_number', '?')}章 ---\n"
+        prev_prose += f"\n--- Chapter {ch.get('chapter_number', '?')} ---\n"
         prev_prose += ch.get("prose", "")[:400] + "\n"
 
     user_msg = (
-        f"故事主题: {theme}\n"
-        f"接下来是第 {next_chapter_number} 章。\n\n"
-        f"用户选择的故事走向:\n{user_choice}\n\n"
-        f"世界设定: {world_config.get('name', '')} — {world_config.get('description', '')}\n\n"
-        f"角色:\n{chr(10).join(char_summaries)}\n\n"
-        f"前情回顾:{prev_prose}\n\n"
-        f"请根据用户选择，为第 {next_chapter_number} 章规划大纲。"
+        f"Story theme: {theme}\n"
+        f"Next chapter: {next_chapter_number}\n\n"
+        f"User's chosen direction:\n{user_choice}\n\n"
+        f"World: {world_config.get('name', '')} — {world_config.get('description', '')}\n\n"
+        f"Characters:\n{chr(10).join(char_summaries)}\n\n"
+        f"Previous story:\n{prev_prose}\n\n"
+        f"Plan chapter {next_chapter_number} based on the user's choice."
     )
 
     response = chat_json(
@@ -147,16 +147,16 @@ def extend_story(
         log.error("Failed to parse extend_story response, using fallback")
         data = {
             "chapter_number": next_chapter_number,
-            "title": f"第{next_chapter_number}章",
+            "title": f"Chapter {next_chapter_number}",
             "summary": user_choice[:200],
             "conflict_level": 0.5,
             "despair_level": 0.3,
-            "key_events": ["故事继续展开", "角色面对选择的后果"],
+            "key_events": ["The story unfolds", "Characters face the consequences of their choice"],
         }
 
     plan = ChapterPlan(
         chapter_number=data["chapter_number"],
-        title=data.get("title", f"第{next_chapter_number}章"),
+        title=data.get("title", f"Chapter {next_chapter_number}"),
         summary=data.get("summary", user_choice[:200]),
         conflict_level=data.get("conflict_level", 0.5),
         despair_level=data.get("despair_level", 0.3),
@@ -170,11 +170,11 @@ def _default_plans(num_chapters: int) -> list[dict]:
     return [
         {
             "chapter_number": i + 1,
-            "title": f"第{i + 1}章",
-            "summary": "故事继续展开…",
+            "title": f"Chapter {i + 1}",
+            "summary": "The story continues to unfold…",
             "conflict_level": min(0.3 + i * 0.2, 0.9),
             "despair_level": min(0.2 + i * 0.1, 0.7),
-            "key_events": ["角色互动", "情感发展"],
+            "key_events": ["Character interaction", "Emotional development"],
         }
         for i in range(num_chapters)
     ]
@@ -184,7 +184,7 @@ def _build_plans(chapters_data: list[dict]) -> list[ChapterPlan]:
     return [
         ChapterPlan(
             chapter_number=ch["chapter_number"],
-            title=ch.get("title", f"第{ch['chapter_number']}章"),
+            title=ch.get("title", f"Chapter {ch['chapter_number']}"),
             summary=ch.get("summary", ""),
             conflict_level=ch.get("conflict_level", 0.5),
             despair_level=ch.get("despair_level", 0.3),

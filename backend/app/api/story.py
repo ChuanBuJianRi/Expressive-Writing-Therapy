@@ -48,7 +48,7 @@ def _prev_prose(story: Story, max_chars: int = 800) -> str:
     """Return recent prose context from the last 2 chapters."""
     prose = ""
     for ch in story.chapters[-2:]:
-        prose += f"\n--- 第{ch.chapter_number}章 ---\n{ch.prose[:max_chars // 2]}\n"
+        prose += f"\n--- Chapter {ch.chapter_number} ---\n{ch.prose[:max_chars // 2]}\n"
     return prose
 
 
@@ -291,10 +291,10 @@ def _chapter_stream(story, plan, chapter_index, user_input,
         for i, char in enumerate(scene_chars):
             char_id = char.get("id", str(i))
             instruction = char_instructions.get(char_id, {
-                "private_instruction": "自由发挥，展现你的角色特色。",
-                "emotional_goal": "展现真实的自我。",
-                "action_hint": "自然地互动。",
-                "interaction_target": "身边的人",
+                "private_instruction": "Follow your instincts and express your character fully.",
+                "emotional_goal": "Show your authentic self.",
+                "action_hint": "React naturally to the scene.",
+                "interaction_target": "Those around you",
             })
 
             action = generate_character_action(

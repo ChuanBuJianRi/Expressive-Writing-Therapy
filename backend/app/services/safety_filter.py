@@ -32,8 +32,8 @@ SAFETY_PROMPT_WATSONX = (
 )
 
 DANGER_KEYWORDS = [
-    "自杀方法", "自残方式", "详细描述暴力", "虐待细节",
-    "how to kill", "self-harm instructions",
+    "how to kill", "self-harm instructions", "suicide method",
+    "detailed violence instructions", "abuse tutorial",
 ]
 
 

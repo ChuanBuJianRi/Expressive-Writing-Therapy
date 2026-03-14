@@ -33,7 +33,7 @@ Output JSON:
   "emotional_state": "one or two keywords for current emotional state",
   "growth_moment": "if this scene marks a shift in your character's perspective, describe it briefly; else empty"
 }
-Respond ONLY with the JSON. Write in Chinese."""
+Respond ONLY with the JSON. Write in English."""
 
 
 def generate_character_action(
@@ -50,36 +50,36 @@ def generate_character_action(
     others_ctx = ""
     if other_characters_public:
         for other in other_characters_public:
-            others_ctx += f"\n- {other['name']}: {other.get('public_action', '（尚未行动）')}"
+            others_ctx += f"\n- {other['name']}: {other.get('public_action', '(has not acted yet)')}"
             if other.get("dialogue"):
-                others_ctx += f'\n  说: "{other["dialogue"]}"'
+                others_ctx += f'\n  Said: "{other["dialogue"]}"'
 
     memory_ctx = ""
     if character.get("memory"):
         for mem in character["memory"][-3:]:
-            memory_ctx += f"\n- 第{mem.get('chapter', '?')}章: {mem.get('public_action', '')[:80]}"
+            memory_ctx += f"\n- Chapter {mem.get('chapter', '?')}: {mem.get('public_action', '')[:80]}"
 
     is_new = character.get("is_story_character", False)
     char_intro = (
-        "（你是刚刚加入故事的新角色，这是你第一次出场，注意给读者留下鲜明印象。）"
+        "(You are a newly introduced character — this is your first appearance. Make a vivid, lasting impression on the reader.)"
         if is_new else ""
     )
 
     user_msg = (
-        f"你是「{character['name']}」。{char_intro}\n"
-        f"性格: {character['personality']}\n"
-        f"背景: {character.get('background', '未知')}\n"
-        f"角色定位: {character.get('role', '角色')}\n\n"
-        f"当前场景: {scene_setting}\n"
-        f"场景张力: {scene_tension:.0%}\n\n"
-        f"导演给你的私密指令:\n"
-        f"- 核心指令: {director_instruction.get('private_instruction', '自由发挥')}\n"
-        f"- 情感目标: {director_instruction.get('emotional_goal', '展现真实的自我')}\n"
-        f"- 行动建议: {director_instruction.get('action_hint', '自然互动')}\n"
-        f"- 互动目标: {director_instruction.get('interaction_target', '身边的人')}\n\n"
-        + (f"其他角色的公开行动:{others_ctx}\n\n" if others_ctx else "你是第一个行动的角色。\n\n")
-        + (f"你的过往记忆:{memory_ctx}\n\n" if memory_ctx else "")
-        + "请以你的角色身份回应当前场景。"
+        f"You are \"{character['name']}\". {char_intro}\n"
+        f"Personality: {character['personality']}\n"
+        f"Background: {character.get('background', 'Unknown')}\n"
+        f"Role: {character.get('role', 'Character')}\n\n"
+        f"Current scene: {scene_setting}\n"
+        f"Scene tension: {scene_tension:.0%}\n\n"
+        f"Private Director's instructions (only you know these):\n"
+        f"- Core directive: {director_instruction.get('private_instruction', 'Follow your instincts')}\n"
+        f"- Emotional goal: {director_instruction.get('emotional_goal', 'Express your authentic self')}\n"
+        f"- Action hint: {director_instruction.get('action_hint', 'React naturally')}\n"
+        f"- Interaction target: {director_instruction.get('interaction_target', 'Those around you')}\n\n"
+        + (f"Other characters' visible actions:{others_ctx}\n\n" if others_ctx else "You act first in this scene.\n\n")
+        + (f"Your memories from earlier:{memory_ctx}\n\n" if memory_ctx else "")
+        + "Respond as your character to the current scene."
     )
 
     response = chat_json(
@@ -95,10 +95,10 @@ def generate_character_action(
     except json.JSONDecodeError:
         log.error("Failed to parse character action for '%s'", character["name"])
         data = {
-            "public_action": f"{character['name']}静静地站在那里，注视着周围的一切。",
-            "private_thought": "我需要时间来理解这里正在发生的一切。",
+            "public_action": f"{character['name']} stands quietly, observing everything around them.",
+            "private_thought": "I need a moment to understand what is happening here.",
             "dialogue": "",
-            "emotional_state": "沉默",
+            "emotional_state": "guarded",
             "growth_moment": "",
         }
 
