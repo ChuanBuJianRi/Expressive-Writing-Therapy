@@ -274,6 +274,79 @@
       color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3);
       border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
     }
+    /* ── Character Network Map ── */
+    .network-canvas {
+      position: relative; width: 100%; height: 100%; min-height: 420px;
+      overflow: hidden; cursor: default; user-select: none;
+      background: radial-gradient(ellipse at 50% 50%, rgba(91,141,238,0.06) 0%, transparent 70%);
+    }
+    .network-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .net-node {
+      position: absolute; display: flex; flex-direction: column; align-items: center;
+      transform: translate(-50%,-50%); cursor: pointer; z-index: 10;
+    }
+    .net-node:hover .net-av { filter: brightness(1.18); }
+    .net-node.selected .net-av {
+      border-color: var(--accent-gold) !important;
+      box-shadow: 0 0 0 4px rgba(232,197,109,0.28), 0 0 22px rgba(232,197,109,0.18);
+    }
+    .net-av {
+      width: 62px; height: 62px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; overflow: hidden;
+      border: 2.5px solid rgba(255,255,255,0.12);
+      transition: border-color 0.15s, box-shadow 0.15s, filter 0.15s;
+      background: var(--bg-card2);
+    }
+    .net-av img { width: 100%; height: 100%; object-fit: cover; }
+    .net-nm {
+      font-size: 11px; font-weight: 700; margin-top: 7px;
+      text-align: center; white-space: nowrap; max-width: 80px;
+      overflow: hidden; text-overflow: ellipsis;
+      background: var(--bg-card); padding: 2px 8px;
+      border-radius: 5px; border: 1px solid var(--border);
+      color: var(--text-primary); pointer-events: none;
+    }
+    .network-hint {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; color: var(--text-muted); background: var(--bg-card2);
+      border: 1px solid var(--border); border-radius: 6px; padding: 5px 14px;
+      pointer-events: none; z-index: 20; white-space: nowrap;
+    }
+    .network-toolbar {
+      position: absolute; bottom: 14px; right: 14px; display: flex; gap: 6px; z-index: 20;
+    }
+    /* Relationship label inside SVG — uses foreignObject for proper styling */
+    .rel-label-badge {
+      background: var(--bg-card2); border: 1px solid rgba(91,141,238,0.35);
+      border-radius: 5px; padding: 2px 8px; font-size: 10px; font-weight: 700;
+      color: var(--accent-blue); white-space: nowrap; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .rel-label-badge:hover { background: rgba(91,141,238,0.12); }
+    /* Relationship modal (floats inside network canvas) */
+    .rel-popup {
+      position: absolute; z-index: 200; background: var(--bg-card);
+      border: 1px solid var(--border-light); border-radius: 13px;
+      padding: 16px 18px; min-width: 230px; max-width: 270px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.55); animation: fadeIn 0.15s ease;
+    }
+    .rel-popup-title { font-size: 12px; font-weight: 800; margin-bottom: 12px; color: var(--text-primary); }
+    .rel-dir-row { display: flex; gap: 5px; margin: 8px 0 12px; }
+    .rel-dir-btn {
+      flex: 1; padding: 6px 0; font-size: 11px; font-weight: 700;
+      background: var(--bg-deep); border: 1.5px solid var(--border);
+      border-radius: 7px; cursor: pointer; color: var(--text-secondary);
+      transition: all 0.12s;
+    }
+    .rel-dir-btn.active { background: rgba(91,141,238,0.15); border-color: var(--accent-blue); color: var(--accent-blue); }
+    .rel-popup-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .net-empty {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      color: var(--text-muted); pointer-events: none;
+    }
+
     /* Avatar */
     .char-avatar {
       width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
@@ -843,6 +916,7 @@
       <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
       <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">💬 Agent Log</button>
       <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
+      <button class="tab-btn"        id="tabNetwork"  onclick="switchMainTab('network')">🕸 Relations</button>
       <div class="tab-spacer"></div>
       <div class="tab-actions">
         <button class="btn btn-ghost btn-sm" onclick="copyStory()">
@@ -910,6 +984,23 @@
           </div>
         </div>
         <div class="node-tooltip" id="nodeTooltip"></div>
+      </div>
+
+      <!-- Character Relationship Network tab -->
+      <div class="tab-panel" id="panelNetwork">
+        <div class="network-canvas" id="networkCanvas">
+          <!-- SVG edges rendered here by JS -->
+          <!-- Node divs rendered here by JS -->
+          <div class="network-hint" id="networkHint">Click a character to select · Click another to connect them</div>
+          <div class="network-toolbar">
+            <button class="btn btn-ghost btn-xs" onclick="resetNetworkLayout()" title="Reset layout">↺ Reset</button>
+            <button class="btn btn-ghost btn-xs" onclick="clearAllRelationships()" title="Clear all connections">✕ Clear</button>
+          </div>
+          <div class="net-empty" id="netEmpty" style="display:none">
+            <span style="font-size:32px;opacity:0.25">🕸</span>
+            <span>Add characters to build their relationship map</span>
+          </div>
+        </div>
       </div>
 
       <!-- World map tab -->
@@ -1340,11 +1431,333 @@ function applyKeywords() {
    Tab switching
 ══════════════════════════════════════════ */
 function switchMainTab(name) {
-  ['story','tree','log','map'].forEach(n=>{
+  ['story','tree','log','map','network'].forEach(n=>{
     document.getElementById('tab'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
     document.getElementById('panel'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
   });
   if(name==='tree') renderTreeSVG();
+  if(name==='network') { setTimeout(renderNetwork, 60); } // wait for panel to be visible
+}
+
+/* ══════════════════════════════════════════
+   Character Relationship Network
+══════════════════════════════════════════ */
+let relationships = [];
+let nodePositions  = {};
+let selectedNetNode = null;
+let netRelIdSeq = 0;
+let _netDrag = null; // { charId, mx0, my0, ox, oy, moved }
+let _relPopup = null; // { fromId, toId, relId(editing) }
+
+function _allNetChars() { return [...characters, ...storyCharacters]; }
+
+function _getChar(id) { return _allNetChars().find(c => String(c.id) === String(id)); }
+
+/* ── Layout ── */
+function initNetworkPositions(force) {
+  const canvas = document.getElementById('networkCanvas');
+  if (!canvas) return;
+  const W = canvas.offsetWidth  || 620;
+  const H = canvas.offsetHeight || 440;
+  const cx = W / 2, cy = H / 2;
+  const chars = _allNetChars();
+  const R = Math.min(W, H) * 0.33;
+  chars.forEach((char, i) => {
+    const id = String(char.id);
+    if (force || !nodePositions[id]) {
+      const angle = (2 * Math.PI * i / chars.length) - Math.PI / 2;
+      nodePositions[id] = { x: cx + R * Math.cos(angle), y: cy + R * Math.sin(angle) };
+    }
+  });
+}
+
+function resetNetworkLayout() {
+  nodePositions = {};
+  renderNetwork();
+}
+function clearAllRelationships() {
+  if (!confirm('Clear all relationships?')) return;
+  relationships = [];
+  renderNetwork();
+}
+
+/* ── SVG helper ── */
+function _svg(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, String(v)));
+  return el;
+}
+
+/* ── Main render ── */
+function renderNetwork() {
+  const canvas = document.getElementById('networkCanvas');
+  if (!canvas) return;
+  const chars = _allNetChars();
+
+  // Empty state
+  const empty = document.getElementById('netEmpty');
+  if (chars.length === 0) { if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+
+  initNetworkPositions(false);
+
+  // ── Build / clear SVG ──
+  let svg = canvas.querySelector('svg.network-svg');
+  if (!svg) {
+    svg = _svg('svg'); svg.classList.add('network-svg');
+    canvas.insertBefore(svg, canvas.firstChild);
+  }
+  // Clear SVG content
+  while (svg.lastChild) svg.removeChild(svg.lastChild);
+
+  // Arrow marker def
+  const defs = _svg('defs');
+  const marker = _svg('marker', { id:'net-arr', viewBox:'0 0 10 10', refX:'8', refY:'5', markerWidth:'5', markerHeight:'5', orient:'auto' });
+  const path = _svg('path'); path.setAttribute('d','M 0 0 L 10 5 L 0 10 z'); path.setAttribute('fill','rgba(91,141,238,0.85)');
+  marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);
+
+  // ── Draw edges ──
+  relationships.forEach(rel => {
+    const fp = nodePositions[String(rel.fromId)];
+    const tp = nodePositions[String(rel.toId)];
+    if (!fp || !tp) return;
+
+    const dx = tp.x - fp.x, dy = tp.y - fp.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return;
+    const nx = dx/dist, ny = dy/dist;
+    const NR = 33; // node radius + margin
+
+    // Forward arrow (from → to)
+    if (rel.direction !== 'backward') {
+      const x1 = fp.x + nx * NR, y1 = fp.y + ny * NR;
+      const x2 = tp.x - nx * (NR+2), y2 = tp.y - ny * (NR+2);
+      const line = _svg('line', { x1, y1, x2, y2, stroke:'rgba(91,141,238,0.65)', 'stroke-width':'1.8', 'marker-end':'url(#net-arr)' });
+      svg.appendChild(line);
+      // Invisible thick hit area
+      const hit = _svg('line', { x1, y1, x2, y2, stroke:'transparent', 'stroke-width':'14' });
+      hit.style.cursor = 'pointer'; hit.style.pointerEvents = 'stroke';
+      hit.addEventListener('click', (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
+      svg.appendChild(hit);
+    }
+
+    // Backward arrow (to → from), offset slightly so both lines are visible
+    if (rel.direction !== 'forward') {
+      const off = rel.direction === 'both' ? 7 : 0;
+      const px = -ny * off, py = nx * off;
+      const x1 = tp.x - nx * NR + px, y1 = tp.y - ny * NR + py;
+      const x2 = fp.x + nx * (NR+2) + px, y2 = fp.y + ny * (NR+2) + py;
+      const line = _svg('line', { x1, y1, x2, y2, stroke:'rgba(91,141,238,0.65)', 'stroke-width':'1.8', 'marker-end':'url(#net-arr)' });
+      svg.appendChild(line);
+      const hit = _svg('line', { x1, y1, x2, y2, stroke:'transparent', 'stroke-width':'14' });
+      hit.style.cursor = 'pointer'; hit.style.pointerEvents = 'stroke';
+      hit.addEventListener('click', (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); });
+      svg.appendChild(hit);
+    }
+
+    // Label (foreignObject centered on edge)
+    const mx = (fp.x + tp.x) / 2, my = (fp.y + tp.y) / 2;
+    const lw = Math.max(rel.label.length * 7.5 + 20, 44), lh = 22;
+    const fo = _svg('foreignObject', { x: mx - lw/2, y: my - lh/2, width: lw, height: lh, overflow:'visible' });
+    fo.style.pointerEvents = 'all';
+    const span = document.createElement('div');
+    span.className = 'rel-label-badge';
+    span.style.cssText = 'display:inline-block;width:100%;text-align:center;box-sizing:border-box';
+    span.textContent = rel.label;
+    span.onclick = (e) => { e.stopPropagation(); openRelPopupEdit(rel.id, canvas); };
+    fo.appendChild(span); svg.appendChild(fo);
+  });
+
+  // ── Node selection hint ──
+  const hint = document.getElementById('networkHint');
+  if (hint) {
+    if (selectedNetNode) {
+      const c = _getChar(selectedNetNode);
+      hint.textContent = `"${c ? c.name : '?'}" selected · Now click another character to connect`;
+      hint.style.color = 'var(--accent-gold)';
+    } else {
+      hint.textContent = 'Click a character to select · Click another to connect them';
+      hint.style.color = '';
+    }
+  }
+
+  // ── Render / update node divs ──
+  // Remove stale nodes
+  canvas.querySelectorAll('.net-node').forEach(el => {
+    if (!chars.find(c => String(c.id) === el.dataset.charId)) el.remove();
+  });
+
+  chars.forEach(char => {
+    const cid = String(char.id);
+    const pos = nodePositions[cid];
+    if (!pos) return;
+
+    let node = canvas.querySelector(`.net-node[data-char-id="${cid}"]`);
+    if (!node) {
+      node = document.createElement('div');
+      node.className = 'net-node';
+      node.dataset.charId = cid;
+      canvas.appendChild(node);
+      node.addEventListener('mousedown', e => _onNetMouseDown(e, cid));
+    }
+
+    node.style.left = pos.x + 'px';
+    node.style.top  = pos.y + 'px';
+    node.classList.toggle('selected', selectedNetNode === cid);
+
+    const colorBg = {
+      blue:'rgba(91,141,238,0.22)', purple:'rgba(155,109,255,0.22)',
+      teal:'rgba(62,201,167,0.22)', rose:'rgba(240,98,146,0.22)',
+    }[char.color || 'blue'] || 'rgba(91,141,238,0.22)';
+
+    const avInner = char.avatar
+      ? `<img src="${char.avatar}" alt="${char.name}">`
+      : (char.emoji || '🎭');
+
+    node.innerHTML = `
+      <div class="net-av" style="background:${colorBg}">${avInner}</div>
+      <div class="net-nm">${char.name || 'Character'}</div>
+    `;
+  });
+}
+
+/* ── Node drag / click ── */
+function _onNetMouseDown(e, charId) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const pos = nodePositions[charId] || { x:0, y:0 };
+  _netDrag = { charId, mx0: e.clientX, my0: e.clientY, ox: pos.x, oy: pos.y, moved: false };
+  const onMove = ev => {
+    if (!_netDrag) return;
+    const dist = Math.hypot(ev.clientX - _netDrag.mx0, ev.clientY - _netDrag.my0);
+    if (dist > 4) {
+      _netDrag.moved = true;
+      nodePositions[_netDrag.charId] = { x: _netDrag.ox + (ev.clientX - _netDrag.mx0), y: _netDrag.oy + (ev.clientY - _netDrag.my0) };
+      renderNetwork();
+    }
+  };
+  const onUp = ev => {
+    if (_netDrag && !_netDrag.moved) _onNetNodeClick(_netDrag.charId);
+    _netDrag = null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function _onNetNodeClick(charId) {
+  closeRelPopup();
+  if (!selectedNetNode) {
+    selectedNetNode = charId; renderNetwork(); return;
+  }
+  if (selectedNetNode === charId) {
+    selectedNetNode = null; renderNetwork(); return;
+  }
+  // Two different nodes selected → open create modal
+  const from = selectedNetNode, to = charId;
+  selectedNetNode = null;
+  renderNetwork();
+  openRelPopupCreate(from, to, document.getElementById('networkCanvas'));
+}
+
+/* ── Relationship popup (create & edit) ── */
+function openRelPopupCreate(fromId, toId, canvas) {
+  _relPopup = { fromId, toId, relId: null, dir: 'both' };
+  _showRelPopup(canvas, fromId, toId,
+    `Connect: ${_getChar(fromId)?.name || '?'} & ${_getChar(toId)?.name || '?'}`, null);
+}
+function openRelPopupEdit(relId, canvas) {
+  const rel = relationships.find(r => r.id === relId);
+  if (!rel) return;
+  _relPopup = { fromId: rel.fromId, toId: rel.toId, relId, dir: rel.direction };
+  _showRelPopup(canvas, rel.fromId, rel.toId,
+    `Edit: ${_getChar(rel.fromId)?.name || '?'} ↔ ${_getChar(rel.toId)?.name || '?'}`, rel);
+}
+
+function _showRelPopup(canvas, fromId, toId, title, existingRel) {
+  closeRelPopup();
+  const p1 = nodePositions[String(fromId)] || { x:100, y:100 };
+  const p2 = nodePositions[String(toId)]   || { x:200, y:200 };
+  const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  const pw = 250, ph = 180;
+  const px = Math.min(Math.max(mx - pw/2, 8), cw - pw - 8);
+  const py = Math.min(Math.max(my - ph/2, 8), ch - ph - 8);
+
+  const fromChar = _getChar(fromId), toChar = _getChar(toId);
+  const fName = fromChar?.name || '?', tName = toChar?.name || '?';
+  const curDir = existingRel ? existingRel.direction : 'both';
+  const curLabel = existingRel ? existingRel.label : '';
+
+  const popup = document.createElement('div');
+  popup.className = 'rel-popup';
+  popup.id = 'relPopup';
+  popup.style.left = px + 'px';
+  popup.style.top  = py + 'px';
+  popup.innerHTML = `
+    <div class="rel-popup-title">${title}</div>
+    <label class="field-label" style="display:block;margin-bottom:4px">Relationship</label>
+    <input class="f-input" id="relLabelInput" placeholder="e.g. allies, rivals, mentor…" value="${curLabel}" style="margin-bottom:2px"/>
+    <label class="field-label" style="display:block;margin:8px 0 4px">Direction</label>
+    <div class="rel-dir-row">
+      <button class="rel-dir-btn${curDir==='forward'?' active':''}" onclick="_setRelDir(this,'forward')">${fName} → ${tName}</button>
+      <button class="rel-dir-btn${curDir==='both'?' active':''}"    onclick="_setRelDir(this,'both')">↔ Both</button>
+      <button class="rel-dir-btn${curDir==='backward'?' active':''}" onclick="_setRelDir(this,'backward')">${fName} ← ${tName}</button>
+    </div>
+    <div class="rel-popup-actions">
+      <button class="btn btn-ghost btn-xs" style="flex:1" onclick="closeRelPopup()">Cancel</button>
+      ${existingRel ? `<button class="btn btn-xs" style="flex:1;background:rgba(240,98,146,0.12);color:var(--accent-rose);border:1px solid rgba(240,98,146,0.3)" onclick="_deleteRel('${existingRel.id}')">Delete</button>` : ''}
+      <button class="btn btn-primary btn-xs" style="flex:2" onclick="_saveRel()">
+        ${existingRel ? 'Update' : 'Connect'}
+      </button>
+    </div>
+  `;
+  canvas.appendChild(popup);
+  setTimeout(() => document.getElementById('relLabelInput')?.focus(), 50);
+}
+
+function _setRelDir(btn, dir) {
+  if (!_relPopup) return;
+  _relPopup.dir = dir;
+  btn.closest('.rel-dir-row').querySelectorAll('.rel-dir-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function _saveRel() {
+  if (!_relPopup) return;
+  const label = (document.getElementById('relLabelInput')?.value || '').trim();
+  if (!label) { showToast('Enter a relationship label','error'); return; }
+  const dir = _relPopup.dir || 'both';
+  if (_relPopup.relId) {
+    // Edit existing
+    const rel = relationships.find(r => r.id === _relPopup.relId);
+    if (rel) { rel.label = label; rel.direction = dir; }
+  } else {
+    // Check for duplicate
+    const dup = relationships.find(r =>
+      (String(r.fromId)===String(_relPopup.fromId) && String(r.toId)===String(_relPopup.toId)) ||
+      (String(r.fromId)===String(_relPopup.toId)   && String(r.toId)===String(_relPopup.fromId))
+    );
+    if (dup) { showToast('A connection already exists — click the label to edit it','info'); closeRelPopup(); return; }
+    relationships.push({ id: 'rel'+(netRelIdSeq++), fromId: _relPopup.fromId, toId: _relPopup.toId, label, direction: dir });
+    showToast(`Connected!`, 'success');
+  }
+  closeRelPopup();
+  renderNetwork();
+}
+
+function _deleteRel(relId) {
+  relationships = relationships.filter(r => r.id !== relId);
+  closeRelPopup();
+  renderNetwork();
+  showToast('Connection removed','info');
+}
+
+function closeRelPopup() {
+  const p = document.getElementById('relPopup');
+  if (p) p.remove();
+  _relPopup = null;
 }
 
 /* ══════════════════════════════════════════
@@ -1893,6 +2306,10 @@ function clearAll(){
   document.getElementById('addStoryCharBtn').style.display='none';
   storyCharacters=[];
   _renderStoryCharGrid();
+  // Reset network
+  relationships=[]; nodePositions={}; selectedNetNode=null; closeRelPopup();
+  const canvas=document.getElementById('networkCanvas');
+  if(canvas){ canvas.querySelectorAll('.net-node').forEach(n=>n.remove()); const nsvg=canvas.querySelector('svg.network-svg'); if(nsvg) nsvg.remove(); }
   resetGenerateBtn();
   showToast('Cleared','info');
 }
