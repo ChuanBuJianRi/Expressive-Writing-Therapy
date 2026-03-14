@@ -274,6 +274,52 @@
       color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3);
       border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
     }
+    /* ── Chapter Cast Pool ── */
+    .pool-section { margin-top: 0; }
+    .pool-section .section-label { display: flex; align-items: center; justify-content: space-between; }
+    .pool-drop-zone {
+      min-height: 58px; border: 2px dashed var(--border); border-radius: 10px;
+      padding: 7px 8px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+      transition: border-color 0.15s, background 0.15s; margin-top: 8px;
+      position: relative;
+    }
+    .pool-drop-zone.drag-over { border-color: var(--accent-blue); background: rgba(91,141,238,0.06); }
+    .pool-empty-hint {
+      font-size: 11px; color: var(--text-muted); width: 100%; text-align: center;
+      pointer-events: none; padding: 4px 0;
+    }
+    .pool-bubble {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: 20px; padding: 3px 7px 3px 3px;
+      font-size: 11px; font-weight: 600; cursor: default;
+      animation: fadeIn 0.15s ease;
+    }
+    .pool-bubble-av {
+      width: 22px; height: 22px; border-radius: 50%; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    .pool-bubble-av img { width: 100%; height: 100%; object-fit: cover; }
+    .pool-bubble-rm {
+      font-size: 13px; line-height: 1; cursor: pointer; color: var(--text-muted);
+      margin-left: 1px; padding: 0 1px;
+    }
+    .pool-bubble-rm:hover { color: var(--accent-rose); }
+    .char-card.in-pool { box-shadow: 0 0 0 2px var(--accent-blue) inset; }
+    .char-card[draggable=true] { cursor: grab; }
+    .char-card.dragging { opacity: 0.4; transform: scale(0.97); }
+    /* Reset All confirmation modal */
+    .reset-confirm-overlay {
+      position: fixed; inset: 0; z-index: 2100;
+      background: rgba(5,7,14,0.75); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .reset-confirm-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: 16px; padding: 28px; width: 340px; max-width: 92vw;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6); animation: fadeIn 0.2s ease;
+    }
+
     /* ── Character Network Map ── */
     .network-canvas {
       position: relative; width: 100%; height: 100%; min-height: 420px;
@@ -986,6 +1032,24 @@
           <span class="slider-val" id="tempVal">0.80</span>
         </div>
       </div>
+      <!-- ── Chapter Cast Pool ── -->
+      <div class="panel-section pool-section" id="poolSection">
+        <div class="section-label">
+          <span>
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Chapter Cast
+          </span>
+          <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;opacity:0.7"
+            onclick="confirmResetAll()" title="Reset all — clear story and characters">↺ Reset All</button>
+        </div>
+        <div class="pool-drop-zone" id="poolDropZone"
+          ondragover="onPoolDragOver(event)"
+          ondragleave="onPoolDragLeave(event)"
+          ondrop="onPoolDrop(event)">
+          <div class="pool-empty-hint" id="poolEmptyHint">Drag characters from below into this chapter</div>
+        </div>
+      </div>
+
       <button class="generate-btn" id="generateBtn" onclick="startStory()" style="margin-top:14px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start Story
@@ -1240,6 +1304,23 @@
     </div>
   </div>
 
+  <!-- Reset All Confirmation -->
+  <div class="reset-confirm-overlay" id="resetConfirmOverlay" style="display:none">
+    <div class="reset-confirm-card">
+      <div style="font-size:28px;text-align:center;margin-bottom:12px">⚠️</div>
+      <div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:8px">Reset Everything?</div>
+      <div style="font-size:12px;color:var(--text-secondary);text-align:center;line-height:1.6;margin-bottom:20px">
+        This will clear the current story, all chapters, the story tree, the chapter cast pool, and all relationship connections.<br/>
+        <strong>This action cannot be undone.</strong>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1;padding:10px" onclick="closeResetConfirm()">Cancel</button>
+        <button class="btn" style="flex:2;padding:10px;background:rgba(240,98,146,0.15);color:var(--accent-rose);border:1px solid rgba(240,98,146,0.35);font-weight:700"
+          onclick="doResetAll()">Yes, Reset All</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Story Character Modal -->
   <div id="addStoryCharOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(5,7,14,0.75);backdrop-filter:blur(12px);align-items:center;justify-content:center">
     <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:16px;padding:24px;width:380px;max-width:90vw">
@@ -1367,6 +1448,7 @@ let characters=[
 ];
 let storyCharacters = []; // characters added mid-story
 let nextId = 4;
+let characterPool = []; // IDs of chars participating in the current chapter
 
 function renderCharacters() {
   _renderCharGrid('characterGrid', characters, false);
@@ -1379,7 +1461,15 @@ function _renderCharGrid(gridId, chars, isStory) {
   g.innerHTML = '';
   chars.forEach(c => {
     const d = document.createElement('div');
-    d.className = 'char-card'; d.dataset.color = c.color || 'blue';
+    const inPool = characterPool.includes(c.id);
+    d.className = 'char-card' + (inPool ? ' in-pool' : ''); d.dataset.color = c.color || 'blue';
+    d.draggable = true; d.dataset.charId = c.id;
+    d.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('charId', c.id);
+      d.classList.add('dragging');
+    });
+    d.addEventListener('dragend', () => d.classList.remove('dragging'));
     const badgeHtml = isStory ? `<span class="story-char-badge">Story</span>` : '';
     const avatarInner = c.avatar
       ? `<img src="${c.avatar}" alt="${c.name}"/>`
@@ -2872,7 +2962,8 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
   setProgress(15,'Director planning…');
 
   try {
-    const chRes=await fetch(`${API_BASE}/api/story/generate-chapter`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({session_id:currentSessionId,user_input:userInput})});
+    const poolPayload = characterPool.length > 0 ? characterPool : null;
+    const chRes=await fetch(`${API_BASE}/api/story/generate-chapter`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({session_id:currentSessionId,user_input:userInput,character_pool:poolPayload})});
     if(!chRes.ok){const e=await chRes.json().catch(()=>({}));throw new Error(e.error||`${chRes.status}`);}
 
     let chapterData=null;
@@ -3112,6 +3203,9 @@ function clearAll(){
   document.getElementById('addStoryCharBtn').style.display='none';
   storyCharacters=[];
   _renderStoryCharGrid();
+  // Reset pool
+  characterPool=[];
+  renderPool();
   // Reset network
   relationships=[]; nodePositions={}; selectedNetNode=null; closeRelPopup();
   const canvas=document.getElementById('networkCanvas');
@@ -3135,6 +3229,92 @@ function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 ══════════════════════════════════════════ */
 renderCharacters();
 initSetup();
+
+/* ══════════════════════════════════════════
+   CHAPTER CAST POOL
+══════════════════════════════════════════ */
+
+function allCharsFlat() {
+  return [...characters, ...storyCharacters];
+}
+
+function renderPool() {
+  const zone = document.getElementById('poolDropZone');
+  const hint = document.getElementById('poolEmptyHint');
+  if (!zone) return;
+  // Remove old bubbles (not the hint div)
+  [...zone.querySelectorAll('.pool-bubble')].forEach(b => b.remove());
+  if (characterPool.length === 0) {
+    hint && (hint.style.display = 'block');
+  } else {
+    hint && (hint.style.display = 'none');
+    const all = allCharsFlat();
+    characterPool.forEach(id => {
+      const c = all.find(x => x.id == id);
+      if (!c) return;
+      const b = document.createElement('div');
+      b.className = 'pool-bubble';
+      const colorBg = {blue:'rgba(91,141,238,0.18)',purple:'rgba(155,109,255,0.18)',teal:'rgba(62,201,167,0.18)',rose:'rgba(240,98,146,0.18)'}[c.color||'blue']||'rgba(91,141,238,0.18)';
+      const avInner = c.avatar ? `<img src="${c.avatar}" alt="${c.name}"/>` : (c.emoji||'🎭');
+      b.innerHTML = `<div class="pool-bubble-av" style="background:${colorBg}">${avInner}</div>`
+        + `<span style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>`
+        + `<span class="pool-bubble-rm" onclick="removeFromPool('${c.id}')" title="Remove">×</span>`;
+      zone.appendChild(b);
+    });
+  }
+  // Refresh card highlighting
+  document.querySelectorAll('.char-card[data-char-id]').forEach(card => {
+    const id = card.dataset.charId;
+    card.classList.toggle('in-pool', characterPool.includes(id));
+  });
+}
+
+function addToPool(charId) {
+  if (!characterPool.includes(charId)) {
+    characterPool.push(charId);
+    renderPool();
+  }
+}
+
+function removeFromPool(charId) {
+  characterPool = characterPool.filter(id => id !== charId);
+  renderPool();
+}
+
+function clearPool() {
+  characterPool = [];
+  renderPool();
+}
+
+function onPoolDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  document.getElementById('poolDropZone').classList.add('drag-over');
+}
+
+function onPoolDragLeave(e) {
+  document.getElementById('poolDropZone').classList.remove('drag-over');
+}
+
+function onPoolDrop(e) {
+  e.preventDefault();
+  document.getElementById('poolDropZone').classList.remove('drag-over');
+  const charId = e.dataTransfer.getData('charId');
+  if (charId) addToPool(charId);
+}
+
+/* ── Reset All confirm ── */
+function confirmResetAll() {
+  document.getElementById('resetConfirmOverlay').style.display = 'flex';
+}
+function closeResetConfirm() {
+  document.getElementById('resetConfirmOverlay').style.display = 'none';
+}
+function doResetAll() {
+  closeResetConfirm();
+  clearPool();
+  clearAll();
+}
 
 // ESC cancels connect mode or deselects
 document.addEventListener('keydown', e => {
