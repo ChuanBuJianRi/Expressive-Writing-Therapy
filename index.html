@@ -487,9 +487,260 @@
     .toast.success { border-left: 3px solid var(--accent-teal); }
     .toast.error   { border-left: 3px solid var(--accent-rose); }
     .toast.info    { border-left: 3px solid var(--accent-blue); }
+
+    /* ══════════════════════════════════════════
+       Setup Modal
+    ══════════════════════════════════════════ */
+    .setup-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(5, 7, 14, 0.88);
+      backdrop-filter: blur(24px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      animation: overlayIn 0.35s ease;
+    }
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    .setup-overlay.hidden { display: none; }
+
+    .setup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      width: 100%; max-width: 500px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      animation: cardIn 0.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+    .setup-top {
+      padding: 32px 32px 0;
+      background: linear-gradient(160deg, rgba(124,58,237,0.08) 0%, rgba(79,110,247,0.05) 100%);
+      text-align: center; border-bottom: 1px solid var(--border);
+      padding-bottom: 28px;
+    }
+    .setup-logo {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px;
+      background: linear-gradient(140deg, #7c3aed 0%, #4f6ef7 55%, #3ec9a7 100%);
+      border-radius: 16px;
+      box-shadow: 0 8px 28px rgba(124,58,237,0.5);
+      margin-bottom: 16px;
+    }
+    .setup-title {
+      font-size: 22px; font-weight: 800; color: var(--text-primary);
+      letter-spacing: -0.02em; margin-bottom: 6px;
+    }
+    .setup-subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+    .setup-body { padding: 28px 32px 32px; }
+
+    .setup-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Provider cards */
+    .provider-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 24px;
+    }
+    .provider-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 14px 10px;
+      cursor: pointer; transition: all 0.18s;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      background: transparent; text-align: center;
+    }
+    .provider-card:hover { border-color: var(--border-light); background: var(--bg-card2); }
+    .provider-card.selected {
+      border-color: var(--accent-purple);
+      background: rgba(155,109,255,0.08);
+      box-shadow: 0 0 0 3px rgba(155,109,255,0.12);
+    }
+    .provider-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .provider-name {
+      font-size: 12px; font-weight: 700; color: var(--text-primary); line-height: 1;
+    }
+    .provider-hint {
+      font-size: 10px; color: var(--text-muted); line-height: 1.3;
+    }
+
+    /* API key input area */
+    .setup-field { margin-bottom: 16px; }
+    .setup-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-muted);
+      display: block; margin-bottom: 7px;
+    }
+    .setup-input {
+      width: 100%; background: var(--bg-deep);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 11px 14px; color: var(--text-primary);
+      font-size: 13px; font-family: inherit; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .setup-input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(155,109,255,0.12);
+    }
+    .setup-input::placeholder { color: var(--text-muted); }
+
+    .setup-input-row { display: flex; gap: 8px; }
+    .setup-input-row .setup-input { flex: 1; }
+    .setup-input-row select.setup-input { flex: 0 0 160px; cursor: pointer; }
+    .setup-input-row select.setup-input option { background: var(--bg-card); }
+
+    /* Key visibility toggle */
+    .key-wrap { position: relative; }
+    .key-wrap .setup-input { padding-right: 44px; }
+    .key-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); padding: 2px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .key-toggle:hover { color: var(--text-primary); }
+
+    .setup-hint {
+      font-size: 11px; color: var(--text-muted);
+      margin-top: 6px; display: flex; align-items: center; gap: 5px;
+    }
+    .setup-hint a { color: var(--accent-blue); text-decoration: none; }
+    .setup-hint a:hover { text-decoration: underline; }
+
+    .btn-setup {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #7c3aed, #4f6ef7);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; margin-top: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+      letter-spacing: 0.01em;
+    }
+    .btn-setup:hover {
+      background: linear-gradient(135deg, #6d28d9, #4060e8);
+      box-shadow: 0 6px 24px rgba(124,58,237,0.5); transform: translateY(-1px);
+    }
+    .btn-setup:active { transform: none; }
+    .btn-setup:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Settings cog in header */
+    .btn-settings {
+      display: flex; align-items: center; gap: 6px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 6px 12px;
+      color: var(--text-secondary); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .btn-settings:hover { background: var(--bg-card2); color: var(--text-primary); border-color: var(--border-light); }
+    .btn-settings svg { width: 14px; height: 14px; }
+
+    /* Provider dot in header (shows current provider) */
+    .provider-dot {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--text-muted); font-weight: 600;
+    }
+    .provider-dot-circle {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent-teal);
+      box-shadow: 0 0 6px rgba(62,201,167,0.6);
+    }
   </style>
 </head>
 <body>
+
+<!-- ══ Setup Modal ══ -->
+<div class="setup-overlay hidden" id="setupOverlay">
+  <div class="setup-card">
+
+    <div class="setup-top">
+      <div class="setup-logo">
+        <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="4.5" r="2.6" fill="white" opacity="0.95"/>
+          <circle cx="4"  cy="16"  r="2.2" fill="white" opacity="0.75"/>
+          <circle cx="18" cy="16"  r="2.2" fill="white" opacity="0.75"/>
+          <line x1="11" y1="4.5" x2="4"  y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
+          <line x1="11" y1="4.5" x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
+          <line x1="4"  y1="16"  x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
+          <circle cx="11" cy="12" r="1.8" fill="white" opacity="0.55"/>
+          <circle cx="11" cy="12" r="0.8" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <div class="setup-title">Welcome to StoryForge</div>
+      <div class="setup-subtitle">Connect your AI provider to start generating<br>multi-agent collaborative stories.</div>
+    </div>
+
+    <div class="setup-body">
+
+      <div class="setup-section-label">Choose your AI provider</div>
+      <div class="provider-grid">
+
+        <div class="provider-card selected" data-provider="openai" onclick="selectProvider('openai', this)">
+          <div class="provider-icon" style="background:linear-gradient(135deg,#10a37f,#1a7f64)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M22.28 9.28a5.76 5.76 0 00-.49-4.73 5.83 5.83 0 00-6.27-2.8A5.77 5.77 0 0011.08 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.84 5.76 5.76 0 00.49 4.73 5.83 5.83 0 006.27 2.8A5.77 5.77 0 0012.92 24a5.84 5.84 0 005.57-4.04 5.77 5.77 0 003.84-2.8 5.83 5.83 0 00-.72-6.84l.67.96zM12.92 22.4a4.33 4.33 0 01-2.78-1.01l.14-.08 4.6-2.66a.76.76 0 00.38-.66v-6.5l1.95 1.12a.07.07 0 01.04.06v5.38a4.35 4.35 0 01-4.33 4.35zM3.6 18.32a4.33 4.33 0 01-.52-2.91l.14.08 4.6 2.66a.76.76 0 00.76 0l5.62-3.25v2.24a.07.07 0 01-.03.06L9.5 19.88a4.35 4.35 0 01-5.9-1.56zm-1.1-9.54a4.32 4.32 0 012.26-1.9v5.47a.76.76 0 00.38.66l5.62 3.24-1.95 1.13a.07.07 0 01-.07 0L4.1 14.7a4.35 4.35 0 01-.6-5.91zm16.06 3.73l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.64 2.68a4.34 4.34 0 01-.67 7.83V12.9a.76.76 0 00-.37-.39zm1.94-2.92l-.13-.08-4.6-2.65a.76.76 0 00-.76 0L9.39 10.1V7.86a.07.07 0 01.03-.06l4.64-2.68a4.34 4.34 0 016.44 4.49zm-12.2 4.01l-1.95-1.13a.07.07 0 01-.04-.06V6.93a4.34 4.34 0 017.12-3.33l-.13.08-4.6 2.65a.76.76 0 00-.38.66l-.02 6.51zm1.06-2.28l2.5-1.44 2.5 1.44v2.88l-2.5 1.44-2.5-1.44V11.32z"/></svg>
+          </div>
+          <div class="provider-name">OpenAI</div>
+          <div class="provider-hint">GPT-4o<br>GPT-4 Turbo</div>
+        </div>
+
+        <div class="provider-card" data-provider="anthropic" onclick="selectProvider('anthropic', this)">
+          <div class="provider-icon" style="background:linear-gradient(135deg,#c96442,#a0412a)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M13.827 3.52h3.603L24 20.39h-3.603l-6.57-16.87zm-7.258 0H10.1l6.57 16.87H13.1l-1.38-3.6H5.467l-1.38 3.6H.48l6.09-16.87zm3.045 4.17L7.43 13.83h4.37l-2.186-6.14z"/></svg>
+          </div>
+          <div class="provider-name">Anthropic</div>
+          <div class="provider-hint">Claude 3.5<br>Sonnet · Opus</div>
+        </div>
+
+        <div class="provider-card" data-provider="google" onclick="selectProvider('google', this)">
+          <div class="provider-icon" style="background:linear-gradient(135deg,#4285f4,#34a853)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 11.1v2.7h4.6c-.2 1.2-.9 2.1-1.9 2.7l3 2.3c1.7-1.6 2.7-4 2.7-6.8 0-.7-.1-1.3-.2-1.9H12zm0-7.7c-4.1 0-7.5 2.7-8.7 6.4l3.4 2.6C7.5 9.8 9.6 8.3 12 8.3c1.6 0 3 .5 4.1 1.5l3-3C17.4 4.8 14.9 3.4 12 3.4zM3.3 8.7C2.5 10 2 11.4 2 13s.5 3 1.3 4.3l3.4-2.6C6.3 14 6 13.5 6 13s.3-1 .7-1.7L3.3 8.7zm1 9.1C5.5 20 8.6 21.6 12 21.6c2.9 0 5.4-1 7.3-2.6l-3-2.3c-1 .7-2.3 1-3.7 1-2.4 0-4.5-1.5-5.3-3.7l-3.3 2.5.3.3z"/></svg>
+          </div>
+          <div class="provider-name">Google</div>
+          <div class="provider-hint">Gemini 1.5<br>Pro · Flash</div>
+        </div>
+
+      </div>
+
+      <div class="setup-section-label">API key</div>
+      <div class="setup-field">
+        <div class="key-wrap">
+          <input class="setup-input" id="setupApiKey" type="password"
+            placeholder="Paste your API key here…" autocomplete="off" />
+          <button class="key-toggle" onclick="toggleKeyVisibility()" id="keyToggleBtn" title="Show/hide key">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="setup-hint" id="setupHint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="setupHintText">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" id="setupHintLink">platform.openai.com</a></span>
+        </div>
+      </div>
+
+      <div class="setup-section-label">Model</div>
+      <div class="setup-field">
+        <select class="setup-input" id="setupModel">
+          <option value="gpt-4o">GPT-4o  (recommended)</option>
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo  (faster)</option>
+        </select>
+      </div>
+
+      <button class="btn-setup" id="setupSaveBtn" onclick="saveSetup()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Start Creating
+      </button>
+
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="logo">
@@ -515,6 +766,14 @@
   </div>
   <div class="header-actions">
     <span class="badge">Multi-Agent</span>
+    <div class="provider-dot" id="providerStatus" style="display:none">
+      <div class="provider-dot-circle"></div>
+      <span id="providerStatusText">GPT-4o</span>
+    </div>
+    <button class="btn-settings" onclick="openSetup()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      API Settings
+    </button>
     <button class="btn btn-ghost btn-sm" onclick="clearAll()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
       Clear
@@ -711,6 +970,155 @@
 <script>
 /* ── Config ── */
 const API_BASE = 'http://localhost:5001';
+
+/* ══════════════════════════════════════════════
+   Setup / API Config Modal
+══════════════════════════════════════════════ */
+const PROVIDER_META = {
+  openai: {
+    models:   [['gpt-4o','GPT-4o  (recommended)'],['gpt-4-turbo','GPT-4 Turbo'],['gpt-3.5-turbo','GPT-3.5 Turbo  (faster)']],
+    hint:     'Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>',
+    base_url: 'https://api.openai.com/v1',
+  },
+  anthropic: {
+    models:   [['claude-3-5-sonnet-20241022','Claude 3.5 Sonnet  (recommended)'],['claude-3-opus-20240229','Claude 3 Opus'],['claude-3-haiku-20240307','Claude 3 Haiku  (faster)']],
+    hint:     'Get your key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>',
+    base_url: 'https://api.anthropic.com/v1',
+  },
+  google: {
+    models:   [['gemini-1.5-pro','Gemini 1.5 Pro  (recommended)'],['gemini-1.5-flash','Gemini 1.5 Flash  (faster)'],['gemini-1.0-pro','Gemini 1.0 Pro']],
+    hint:     'Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>',
+    base_url: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  },
+};
+
+let currentProvider = 'openai';
+let setupConfig = null;  // loaded from localStorage
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem('storyforge_config');
+    if (raw) setupConfig = JSON.parse(raw);
+  } catch (_) {}
+}
+
+function openSetup() {
+  document.getElementById('setupOverlay').classList.remove('hidden');
+  if (setupConfig) {
+    selectProvider(setupConfig.provider, document.querySelector(`[data-provider="${setupConfig.provider}"]`));
+    document.getElementById('setupApiKey').value = setupConfig.api_key || '';
+    document.getElementById('setupModel').value = setupConfig.model || '';
+  }
+}
+
+function closeSetup() {
+  document.getElementById('setupOverlay').classList.add('hidden');
+}
+
+function selectProvider(provider, el) {
+  currentProvider = provider;
+  document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+
+  const meta = PROVIDER_META[provider];
+  // Update model options
+  const sel = document.getElementById('setupModel');
+  sel.innerHTML = meta.models.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  // Update hint
+  document.getElementById('setupHintText').innerHTML = meta.hint;
+}
+
+function toggleKeyVisibility() {
+  const inp = document.getElementById('setupApiKey');
+  const icon = document.getElementById('eyeIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+  } else {
+    inp.type = 'password';
+    icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  }
+}
+
+async function saveSetup() {
+  const apiKey = document.getElementById('setupApiKey').value.trim();
+  const model  = document.getElementById('setupModel').value;
+  if (!apiKey) { showToast('Please enter your API key', 'error'); document.getElementById('setupApiKey').focus(); return; }
+
+  const btn = document.getElementById('setupSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Connecting…`;
+
+  const meta = PROVIDER_META[currentProvider];
+  const cfg = { provider: currentProvider, api_key: apiKey, model, base_url: meta.base_url };
+
+  // POST to backend
+  try {
+    const res = await fetch(`${API_BASE}/api/config/llm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || `Server error ${res.status}`);
+    }
+    showToast('API configured successfully!', 'success');
+  } catch (err) {
+    // Backend might not be running; save locally anyway and warn
+    showToast(`Saved locally (backend offline: ${err.message})`, 'info');
+  }
+
+  // Always persist to localStorage
+  localStorage.setItem('storyforge_config', JSON.stringify(cfg));
+  setupConfig = cfg;
+  updateProviderStatus();
+
+  // Update the control bar model selector to match
+  syncModelToControlBar(cfg.provider, cfg.model);
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Start Creating`;
+  closeSetup();
+}
+
+function updateProviderStatus() {
+  if (!setupConfig) return;
+  const statusEl = document.getElementById('providerStatus');
+  const textEl   = document.getElementById('providerStatusText');
+  statusEl.style.display = '';
+  textEl.textContent = setupConfig.model || setupConfig.provider;
+}
+
+function syncModelToControlBar(provider, model) {
+  const sel = document.getElementById('modelSelect');
+  // Try to find matching option; otherwise inject one
+  for (const opt of sel.options) {
+    if (opt.value.toLowerCase().includes(model.toLowerCase()) ||
+        model.toLowerCase().includes(opt.value.toLowerCase())) {
+      sel.value = opt.value; return;
+    }
+  }
+  const opt = document.createElement('option');
+  opt.value = model; opt.textContent = model;
+  sel.appendChild(opt); sel.value = model;
+}
+
+function initSetup() {
+  loadConfig();
+  if (!setupConfig || !setupConfig.api_key) {
+    // First visit — show modal
+    document.getElementById('setupOverlay').classList.remove('hidden');
+  } else {
+    updateProviderStatus();
+    // Re-apply saved config to backend on page load
+    fetch(`${API_BASE}/api/config/llm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(setupConfig),
+    }).catch(() => {});
+  }
+}
 
 /* ── State ── */
 const COLORS = ['blue', 'purple', 'teal', 'rose'];
@@ -1066,6 +1474,7 @@ function showToast(msg, type = 'info') {
 }
 
 renderCharacters();
+initSetup();
 </script>
 </body>
 </html>

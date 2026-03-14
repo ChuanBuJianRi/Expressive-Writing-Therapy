@@ -16,11 +16,13 @@ def create_app():
     from app.api.character import character_bp
     from app.api.world import world_bp
     from app.api.session import session_bp
+    from app.api.config import config_bp
 
-    app.register_blueprint(story_bp, url_prefix="/api/story")
+    app.register_blueprint(story_bp,     url_prefix="/api/story")
     app.register_blueprint(character_bp, url_prefix="/api/character")
-    app.register_blueprint(world_bp, url_prefix="/api/world")
-    app.register_blueprint(session_bp, url_prefix="/api/session")
+    app.register_blueprint(world_bp,     url_prefix="/api/world")
+    app.register_blueprint(session_bp,   url_prefix="/api/session")
+    app.register_blueprint(config_bp,    url_prefix="/api/config")
 
     @app.route("/health")
     def health():
