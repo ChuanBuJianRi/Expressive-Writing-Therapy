@@ -406,6 +406,8 @@
     .log-message.char-purple  { border-left-color: var(--accent-purple); }
     .log-message.char-teal    { border-left-color: var(--accent-teal); }
     .log-message.char-rose    { border-left-color: var(--accent-rose); }
+    .log-message.composer     { border-left-color: #e8c56d; }
+    .log-message.safety       { border-left-color: var(--accent-teal); }
 
     .log-sender { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
     .log-message.director    .log-sender { color: var(--accent-gold); }
@@ -413,6 +415,8 @@
     .log-message.char-purple .log-sender { color: var(--accent-purple); }
     .log-message.char-teal   .log-sender { color: var(--accent-teal); }
     .log-message.char-rose   .log-sender { color: var(--accent-rose); }
+    .log-message.composer    .log-sender { color: #e8c56d; }
+    .log-message.safety      .log-sender { color: var(--accent-teal); }
 
     .log-content { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 
@@ -569,12 +573,12 @@
     </div>
     <div class="divider-v"></div>
     <div class="control-group">
-      <span class="control-label">Iterations</span>
+      <span class="control-label">Chapters</span>
       <select class="control-select" id="iterRounds">
-        <option value="1">1 Round</option>
-        <option value="2" selected>2 Rounds</option>
-        <option value="3">3 Rounds</option>
-        <option value="5">5 Rounds</option>
+        <option value="1">1 Chapter</option>
+        <option value="2" selected>2 Chapters</option>
+        <option value="3">3 Chapters</option>
+        <option value="5">5 Chapters</option>
       </select>
     </div>
     <div class="divider-v"></div>
@@ -672,22 +676,28 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+/* ── Config ── */
+const API_BASE = 'http://localhost:5001';
+
+/* ── State ── */
 const COLORS = ['blue', 'purple', 'teal', 'rose'];
 const EMOJIS = ['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿'];
 
 let characters = [
-  { id: 1, name: 'Elena',  role: 'Protagonist · Apprentice Mage',   desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue' },
-  { id: 2, name: 'Karl',   role: 'Supporting · Ranger Captain',     desc: 'A man of few words whose blade conceals fierce loyalty',    emoji: '🗡️', color: 'purple' },
-  { id: 3, name: 'Lysa',   role: 'Supporting · Mystic Oracle',      desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal' },
+  { id: 1, name: 'Elena', role: 'Protagonist · Apprentice Mage',  desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue'   },
+  { id: 2, name: 'Karl',  role: 'Supporting · Ranger Captain',    desc: 'A man of few words whose blade conceals fierce loyalty',    emoji: '🗡️', color: 'purple' },
+  { id: 3, name: 'Lysa',  role: 'Supporting · Mystic Oracle',     desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal'   },
 ];
 let nextId = 4;
 let currentTab = 'story';
 let isGenerating = false;
+let currentSessionId = null;
+let renderedChapters = [];   // accumulate chapter HTML
 
+/* ── Character grid ── */
 function renderCharacters() {
   const grid = document.getElementById('characterGrid');
   grid.innerHTML = '';
-
   characters.forEach(c => {
     const card = document.createElement('div');
     card.className = 'char-card';
@@ -706,23 +716,16 @@ function renderCharacters() {
       <textarea class="char-desc-input" placeholder="Personality, background, traits…"
         oninput="updateChar(${c.id},'desc',this.value)">${c.desc}</textarea>
       <div class="char-card-footer">
-        <div class="char-status">
-          <div class="status-dot"></div>
-          Standby
-        </div>
-        <button class="btn-remove" onclick="removeCharacter(${c.id})" title="Remove character">×</button>
-      </div>
-    `;
+        <div class="char-status"><div class="status-dot"></div> Standby</div>
+        <button class="btn-remove" onclick="removeCharacter(${c.id})" title="Remove">×</button>
+      </div>`;
     grid.appendChild(card);
   });
 
   const addCard = document.createElement('div');
   addCard.className = 'add-char-card';
   addCard.onclick = addCharacter;
-  addCard.innerHTML = `
-    <div class="add-char-icon">＋</div>
-    <span class="add-char-label">Add New Character</span>
-  `;
+  addCard.innerHTML = `<div class="add-char-icon">＋</div><span class="add-char-label">Add New Character</span>`;
   grid.appendChild(addCard);
 
   document.getElementById('statChars').textContent = characters.length;
@@ -732,7 +735,6 @@ function updateChar(id, field, value) {
   const c = characters.find(c => c.id === id);
   if (c) c[field] = value;
 }
-
 function addCharacter() {
   const color = COLORS[characters.length % COLORS.length];
   const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
@@ -740,19 +742,17 @@ function addCharacter() {
   renderCharacters();
   showToast('New character added', 'success');
 }
-
 function removeCharacter(id) {
   if (characters.length <= 1) { showToast('At least one character is required', 'error'); return; }
   characters = characters.filter(c => c.id !== id);
   renderCharacters();
   showToast('Character removed', 'info');
 }
-
 function resetCharacters() {
   characters = [
-    { id: 1, name: 'Elena', role: 'Protagonist · Apprentice Mage',  desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue' },
+    { id: 1, name: 'Elena', role: 'Protagonist · Apprentice Mage',  desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue'   },
     { id: 2, name: 'Karl',  role: 'Supporting · Ranger Captain',    desc: 'A man of few words whose blade conceals fierce loyalty',    emoji: '🗡️', color: 'purple' },
-    { id: 3, name: 'Lysa',  role: 'Supporting · Mystic Oracle',     desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal' },
+    { id: 3, name: 'Lysa',  role: 'Supporting · Mystic Oracle',     desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal'   },
   ];
   nextId = 4;
   renderCharacters();
@@ -760,11 +760,7 @@ function resetCharacters() {
 }
 
 function toggleChip(el) { el.classList.toggle('active'); }
-
-function updateTemp(el) {
-  document.getElementById('tempVal').textContent = (el.value / 100).toFixed(2);
-}
-
+function updateTemp(el) { document.getElementById('tempVal').textContent = (el.value / 100).toFixed(2); }
 function switchTab(btn, tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -773,106 +769,196 @@ function switchTab(btn, tab) {
   document.getElementById('agentLogPanel').style.display  = tab === 'log'   ? '' : 'none';
 }
 
-const DEMO_STORY = `<p style="color:var(--accent-gold);font-weight:700;font-size:17px;margin-bottom:16px">The Crossroads in the Mist</p>
+/* ── SSE helper (POST + stream) ── */
+async function* readSSE(response) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop();
+    for (const part of parts) {
+      if (!part.trim()) continue;
+      let eventType = 'message', data = '';
+      for (const line of part.split('\n')) {
+        if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+        if (line.startsWith('data: '))  data      = line.slice(6).trim();
+      }
+      if (data) { try { yield { eventType, data: JSON.parse(data) }; } catch (_) {} }
+    }
+  }
+}
 
-<p>It was a night so silent that even the stars seemed to hold their breath.</p>
+/* ── Prose renderer ── */
+function proseToHtml(prose) {
+  return prose.split(/\n\n+/).map(p => p.trim()).filter(Boolean)
+    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+}
 
-<p>Elena stepped across the rain-slicked cobblestones, sparks of blue magic flickering nervously from her fingertips. She had never imagined that the sealed ring hidden in her mentor's attic trunk would lead her here — to the gates of a fog-shrouded city forgotten for three hundred years.</p>
+function renderStoryPanel() {
+  const panel = document.getElementById('storyTextPanel');
+  if (!renderedChapters.length) return;
+  panel.innerHTML = renderedChapters.join('');
+}
 
-<p>"Don't move."</p>
-
-<p>A low voice pressed in from behind her, close as a blade against skin. Elena froze. A heartbeat later, she recognized the voice — Karl, Captain of the Rangers, the man who had walked beside her through seven ruins over the past six months.</p>
-
-<p>"It's me," she said softly.</p>
-
-<p>His grip released, a quiet exhale dissolving into the mist. "Do you have any idea how many things in this fog are waiting for prey?"</p>
-
-<p>Elena didn't answer. She simply opened her palm, letting the ring's ancient runes bleed orange-red light into the dark. Karl stared at the glow, and something crossed his face that Elena had never seen before — not fear, but something older. Recognition.</p>
-
-<p>"Lysa was right," he finally said, his voice lower than usual. "That thing doesn't belong to your mentor."</p>
-
-<p>At that moment, a clear, pure chime rang from deep within the mist.</p>
-
-<p>Lysa emerged from the darkness, her deep violet cloak dusted with silver-white leaves, a crystal orb floating above her open palm — reflecting the entire fog-realm in miniature. She glanced at Elena, then at the ring, and gave a slow shake of her head.</p>
-
-<p>"I've cast the reading three times," she said, her gaze drifting toward the half-hidden gate. "Every time, the same ending — the same door. And that door can only open if three people believe at once."</p>
-
-<p>The three of them looked at one another. In the silence that followed, Elena smiled — a steady, certain smile that surprised even herself. She reached her hand forward. Karl hesitated for one second, then covered it with his. Lysa was last, but held on the tightest.</p>
-
-<p>The mist shuddered. Without a sound, the gates swung open.</p>
-
-<p style="color:var(--text-muted);font-style:italic;margin-top:24px;font-size:13px">── End of Act I ──</p>`;
-
-const DEMO_LOGS = [
-  { sender: 'Director',  cls: 'director',    text: 'Initializing story world: fantasy setting, city of mist, three protagonists. Core conflict set as the sealed ring vs. the forgotten city.' },
-  { sender: 'Elena',     cls: 'char-blue',   text: 'Role parameters received. I will act from curiosity — arriving at the gate alone in Act I to trigger the encounter with the other agents.' },
-  { sender: 'Director',  cls: 'director',    text: "Elena's action path approved. Instruction to Karl: patrol near the gate and intervene subtly to demonstrate your protective nature." },
-  { sender: 'Karl',      cls: 'char-purple', text: 'Agent response: I will create tension by appearing suddenly, then use the ring detail to hint at a hidden past.' },
-  { sender: 'Lysa',      cls: 'char-teal',   text: 'Oracle scene ready. I will arrive at the critical moment as a third-party perspective to reveal the fate thread and drive the cooperative ending.' },
-  { sender: 'Director',  cls: 'director',    text: 'Round 1 complete — story structure is coherent. Merging all agent narratives and generating final story text…' },
-];
-
+/* ── Main generate flow ── */
 async function generateStory() {
   if (isGenerating) return;
-
   const theme = document.getElementById('storyTheme').value.trim();
-  if (!theme) {
-    showToast('Please enter a story theme first', 'error');
-    document.getElementById('storyTheme').focus();
-    return;
-  }
+  if (!theme) { showToast('Please enter a story theme first', 'error'); document.getElementById('storyTheme').focus(); return; }
 
   isGenerating = true;
+  renderedChapters = [];
+  currentSessionId = null;
+
   const btn = document.querySelector('.btn-generate');
   btn.disabled = true;
   btn.innerHTML = `<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Generating…`;
 
-  document.getElementById('statRounds').textContent = document.getElementById('iterRounds').value;
-  document.getElementById('storyTitleDisplay').textContent = theme.length > 24 ? theme.slice(0, 24) + '…' : theme;
-
   const logTab = document.querySelectorAll('.tab')[1];
   switchTab(logTab, 'log');
   document.getElementById('logMessages').innerHTML = '';
-
-  const progressWrap = document.getElementById('progressWrap');
-  progressWrap.classList.add('visible');
-  setProgress(0, 'Starting agents…');
+  document.getElementById('progressWrap').classList.add('visible');
+  setProgress(0, 'Initializing agents…');
+  document.getElementById('storyTitleDisplay').textContent = theme.length > 24 ? theme.slice(0, 24) + '…' : theme;
 
   const startTime = Date.now();
 
-  for (let i = 0; i < DEMO_LOGS.length; i++) {
-    await delay(700 + Math.random() * 500);
-    addLogMessage(DEMO_LOGS[i]);
-    setProgress(
-      Math.round(((i + 1) / DEMO_LOGS.length) * 80),
-      i < 2 ? 'Director planning…' : i < 4 ? 'Characters responding…' : 'Merging narratives…'
-    );
+  try {
+    /* ── Step 1: /api/story/start ── */
+    const tags        = [...document.querySelectorAll('.chip.active')].map(c => c.textContent.trim());
+    const customSetting = document.getElementById('storySetting').value.trim();
+    const directorNote  = document.getElementById('directorNote').value.trim();
+    const numChapters   = parseInt(document.getElementById('iterRounds').value) || 2;
+
+    // Map UI characters → backend schema (use color as id so cls matches CSS)
+    const charPayload = characters.map(c => ({
+      id:          c.color,
+      name:        c.name,
+      personality: c.desc || 'A mysterious character with hidden depths.',
+      background:  '',
+      role:        c.role,
+      color:       c.color,
+    }));
+
+    setProgress(5, 'Building story world…');
+    const startRes = await fetch(`${API_BASE}/api/story/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        theme,
+        tags,
+        characters: charPayload,
+        custom_setting: customSetting + (directorNote ? '\n\nDirector notes: ' + directorNote : ''),
+        num_chapters: numChapters,
+      }),
+    });
+
+    if (!startRes.ok) {
+      const err = await startRes.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${startRes.status}`);
+    }
+
+    const startData = await startRes.json();
+    currentSessionId = startData.session_id;
+    document.getElementById('statRounds').textContent = startData.chapter_plans?.length ?? numChapters;
+
+    const worldDesc = startData.world?.description || startData.world?.setting?.atmosphere || 'World initialized';
+    addLogMessage({ sender: '🌍 World Builder', cls: 'director', text: worldDesc });
+    setProgress(10, 'World ready — starting chapter pipeline…');
+
+    /* ── Step 2: generate each chapter via SSE ── */
+    const totalChapters = startData.chapter_plans?.length ?? numChapters;
+    for (let i = 0; i < totalChapters; i++) {
+      const plan = startData.chapter_plans?.[i];
+      const chapterTitle = plan?.title || `Chapter ${i + 1}`;
+
+      addLogMessage({ sender: `📖 Chapter ${i + 1}`, cls: 'composer', text: `Starting: "${chapterTitle}"` });
+      setCharStatus('active');
+
+      const baseProgress = 10 + Math.round((i / totalChapters) * 85);
+      setProgress(baseProgress, `Chapter ${i + 1} / ${totalChapters}: ${chapterTitle}…`);
+
+      const chRes = await fetch(`${API_BASE}/api/story/generate-chapter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        body: JSON.stringify({ session_id: currentSessionId }),
+      });
+
+      if (!chRes.ok) {
+        const err = await chRes.json().catch(() => ({}));
+        throw new Error(err.error || `Chapter generation failed (${chRes.status})`);
+      }
+
+      for await (const { eventType, data } of readSSE(chRes)) {
+        if (eventType === 'progress') {
+          const chapterOffset = 10 + Math.round((i / totalChapters) * 85);
+          const chapterShare  = Math.round((1 / totalChapters) * 85);
+          setProgress(
+            Math.min(95, chapterOffset + Math.round((data.progress / 100) * chapterShare)),
+            data.message
+          );
+        } else if (eventType === 'log') {
+          addLogMessage({ sender: data.sender, cls: data.cls, text: data.text });
+        } else if (eventType === 'chapter') {
+          const ch = data.chapter;
+          const safetyScore = data.safety?.safety_score ?? ch.safety_score ?? 1;
+          renderedChapters.push(`
+            <div style="margin-bottom:32px">
+              <p style="color:var(--accent-gold);font-weight:700;font-size:16px;margin-bottom:6px">
+                Chapter ${ch.chapter_number}: ${ch.title}
+              </p>
+              <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
+              ${proseToHtml(ch.prose)}
+              ${safetyScore < 0.8 ? `<p style="font-size:11px;color:var(--accent-rose);margin-top:12px">⚠ Safety score: ${(safetyScore * 100).toFixed(0)}%</p>` : ''}
+            </div>`);
+          renderStoryPanel();
+          // word count
+          const allText = renderedChapters.map(h => h.replace(/<[^>]+>/g, ' ')).join(' ');
+          document.getElementById('statWords').textContent = allText.trim().split(/\s+/).filter(Boolean).length;
+        }
+      }
+    }
+
+    /* ── Done ── */
+    setProgress(100, 'Done!');
+    const storyTab = document.querySelectorAll('.tab')[0];
+    switchTab(storyTab, 'story');
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById('statTime').textContent = elapsed + 's';
+
+    await delay(500);
+    document.getElementById('progressWrap').classList.remove('visible');
+    setCharStatus('done');
+    showToast('Story generated successfully!', 'success');
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('progressWrap').classList.remove('visible');
+    showToast(`Error: ${err.message}`, 'error');
+    addLogMessage({ sender: '⚠ System', cls: 'safety', text: err.message });
   }
-
-  await delay(600);
-  setProgress(95, 'Generating story text…');
-  await delay(800);
-  setProgress(100, 'Done!');
-
-  const storyTab = document.querySelectorAll('.tab')[0];
-  switchTab(storyTab, 'story');
-  document.getElementById('storyTextPanel').innerHTML = DEMO_STORY;
-
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  document.getElementById('statWords').textContent = '312';
-  document.getElementById('statTime').textContent = elapsed + 's';
-
-  await delay(500);
-  progressWrap.classList.remove('visible');
 
   isGenerating = false;
   btn.disabled = false;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Regenerate`;
-  showToast('Story generated successfully!', 'success');
+}
 
-  document.querySelectorAll('.char-status').forEach(s => {
-    s.innerHTML = `<div class="status-dot" style="background:var(--accent-gold);box-shadow:0 0 6px rgba(232,197,109,0.6)"></div> Done`;
-  });
+/* ── Helpers ── */
+function setCharStatus(state) {
+  if (state === 'active') {
+    document.querySelectorAll('.char-status').forEach(s => {
+      s.innerHTML = `<div class="status-dot" style="background:var(--accent-blue);box-shadow:0 0 6px rgba(91,141,238,0.6)"></div> Active`;
+    });
+  } else {
+    document.querySelectorAll('.char-status').forEach(s => {
+      s.innerHTML = `<div class="status-dot" style="background:var(--accent-gold);box-shadow:0 0 6px rgba(232,197,109,0.6)"></div> Done`;
+    });
+  }
 }
 
 function addLogMessage({ sender, cls, text }) {
@@ -908,6 +994,8 @@ function exportStory() {
 }
 
 function clearAll() {
+  renderedChapters = [];
+  currentSessionId = null;
   document.getElementById('storyTheme').value = '';
   document.getElementById('storySetting').value = '';
   document.getElementById('directorNote').value = '';
