@@ -90,6 +90,14 @@ Output JSON:
 Respond ONLY with JSON."""
 
 
+def _fmt_relationships(relationships: list[dict]) -> str:
+    if not relationships:
+        return ""
+    lines = [f"  {r.get('fromName', r['fromId'])} → {r.get('toName', r['toId'])}: {r['label']}"
+             for r in relationships]
+    return "Current character relationships (directed — A→B is A's feeling toward B):\n" + "\n".join(lines)
+
+
 def plan_scenes(
     world_config: dict,
     characters: list[dict],
@@ -99,6 +107,7 @@ def plan_scenes(
     previous_context: str = "",
     tension_threshold: float = 0.72,
     total_chapters: int = 1,
+    relationships: list[dict] | None = None,
 ) -> list[ScenePlan]:
     """Director plans scenes for the next story segment with dramatic arc awareness."""
     arc_stage, arc_note = _arc_stage(chapter_number, total_chapters)
@@ -106,8 +115,11 @@ def plan_scenes(
 
     char_list = "\n".join(
         f"  [{c['id']}] {c['name']} ({c.get('role', '')}): {c.get('personality', '')[:100]}"
+        + (f" | Background: {c.get('background','')[:80]}" if c.get('background') else "")
+        + (f" | Secret: {c.get('secrets','')[:60]}" if c.get('secrets') else "")
         for c in characters
     )
+    rel_block = _fmt_relationships(relationships or [])
 
     user_msg = (
         f"Story Theme: {theme}\n"
@@ -116,10 +128,12 @@ def plan_scenes(
         f"Tension Threshold for Decision Point: {tension_threshold}\n\n"
         f"World: {world_config.get('name', '')} — {world_config.get('description', '')[:200]}\n\n"
         f"Characters:\n{char_list}\n\n"
+        + (f"{rel_block}\n\n" if rel_block else "")
         + (f"User's chosen direction:\n{user_choice}\n\n" if user_choice else "")
         + (f"Story so far (excerpt):\n{previous_context[:600]}\n\n" if previous_context else "")
         + "Plan the scenes. Remember: OPPOSITION drives drama. "
-          "Put characters' hidden needs on a collision course."
+          "Let the relationship tensions create unavoidable collision points. "
+          "Put characters' hidden needs and their feelings toward each other on a collision course."
     )
 
     response = chat_json(
@@ -311,6 +325,7 @@ def direct_scene(
     previous_context: str = "",
     chapter_number: int = 1,
     total_chapters: int = 1,
+    relationships: list[dict] | None = None,
 ) -> dict:
     """Phase 2: Master Director issues instructions armed with full private knowledge."""
     arc_stage, arc_note = _arc_stage(chapter_number, total_chapters)
@@ -345,6 +360,8 @@ def direct_scene(
         if scene_plan.is_decision_point else ""
     )
 
+    rel_block = _fmt_relationships(relationships or [])
+
     user_msg = (
         f"Scene: {scene_plan.scene_number} — '{scene_plan.title}'\n"
         f"Description: {scene_plan.description}\n"
@@ -353,9 +370,11 @@ def direct_scene(
         f"{decision_note}\n\n"
         f"World: {world_config.get('name', '')} — {world_config.get('description', '')[:150]}\n\n"
         f"Characters:\n{char_overview}\n\n"
-        f"Private Intelligence (EYES ONLY):{intel_summary}\n\n"
+        + (f"{rel_block}\n\n" if rel_block else "")
+        + f"Private Intelligence (EYES ONLY):{intel_summary}\n\n"
         + (f"Story context:\n{previous_context[:400]}\n\n" if previous_context else "")
-        + "Direct this scene. Use every piece of private intel to create maximum dramatic truth."
+        + "Direct this scene. Use every piece of private intel and the relationship map to "
+          "create maximum dramatic truth. Let asymmetric feelings create subtext and tension."
     )
 
     response = chat_json(

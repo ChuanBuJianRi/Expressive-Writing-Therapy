@@ -143,7 +143,8 @@ def generate_chapter():
     data = request.get_json() or {}
     session_id = data.get("session_id", "")
     user_input = data.get("user_input", "")
-    character_pool = data.get("character_pool")  # optional list of char IDs
+    character_pool = data.get("character_pool")       # optional list of char IDs
+    relationships   = data.get("relationships") or []  # [{fromId,toId,label,fromName,toName}]
 
     story = _stories.get(session_id)
     if not story:
@@ -186,6 +187,7 @@ def generate_chapter():
                 story, plan, chapter_index, user_input,
                 chapter_length_hint, tension_threshold,
                 active_chars=active_chars,
+                relationships=relationships,
             )),
             mimetype="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -194,7 +196,7 @@ def generate_chapter():
     # Non-streaming fallback
     chapter = _run_chapter_pipeline(
         story, plan, chapter_index, user_input, chapter_length_hint, tension_threshold,
-        active_chars=active_chars,
+        active_chars=active_chars, relationships=relationships,
     )
     return jsonify({
         "chapter": chapter.to_dict(),
@@ -209,9 +211,10 @@ def generate_chapter():
 # ═══════════════════════════════════════════════════
 
 def _chapter_stream(story, plan, chapter_index, user_input,
-                    chapter_length_hint, tension_threshold, active_chars=None):
+                    chapter_length_hint, tension_threshold, active_chars=None, relationships=None):
     chapter_num = chapter_index + 1
     all_chars = active_chars if active_chars else story.all_characters
+    relationships = relationships or []
 
     yield _sse("progress", {"step": "planning", "message": "Director planning scenes…", "progress": 5})
 
@@ -224,6 +227,7 @@ def _chapter_stream(story, plan, chapter_index, user_input,
         user_choice=user_input,
         previous_context=_prev_prose(story),
         tension_threshold=tension_threshold,
+        relationships=relationships,
     )
 
     yield _sse("log", {
@@ -285,6 +289,7 @@ def _chapter_stream(story, plan, chapter_index, user_input,
             previous_context=_prev_prose(story, 400),
             chapter_number=chapter_num,
             total_chapters=len(story.chapters),
+            relationships=relationships,
         )
 
         yield _sse("log", {
@@ -417,10 +422,11 @@ def _chapter_stream(story, plan, chapter_index, user_input,
 
 
 def _run_chapter_pipeline(story, plan, chapter_index, user_input,
-                           chapter_length_hint, tension_threshold, active_chars=None):
+                           chapter_length_hint, tension_threshold, active_chars=None, relationships=None):
     """Non-streaming chapter generation."""
     chapter_num = chapter_index + 1
     all_chars = active_chars if active_chars else story.all_characters
+    relationships = relationships or []
 
     scene_plans = plan_scenes(
         world_config=story.world_config,
