@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multi-Agent Story Generator</title>
+  <title>StoryForge · Multi-Agent Story Generator</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-deep:       #0a0c14;
-      --bg-card:       #11141f;
-      --bg-card2:      #161a28;
-      --border:        #252a3d;
-      --border-light:  #2e3450;
+      --bg-deep:       #080a12;
+      --bg-card:       #0f1120;
+      --bg-card2:      #141728;
+      --border:        #1e2235;
+      --border-light:  #272d45;
       --accent-gold:   #e8c56d;
       --accent-blue:   #5b8dee;
       --accent-purple: #9b6dff;
@@ -21,9 +21,6 @@
       --text-primary:  #e8eaf0;
       --text-secondary:#8a91a8;
       --text-muted:    #4a5068;
-      --glow-gold:     0 0 20px rgba(232,197,109,0.25);
-      --glow-blue:     0 0 20px rgba(91,141,238,0.3);
-      --glow-purple:   0 0 20px rgba(155,109,255,0.3);
       --radius:        14px;
       --radius-sm:     8px;
     }
@@ -35,623 +32,443 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-
     body::before {
-      content: '';
-      position: fixed; inset: 0;
+      content: ''; position: fixed; inset: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(91,141,238,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(155,109,255,0.07) 0%, transparent 60%);
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(91,141,238,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(155,109,255,0.06) 0%, transparent 60%);
       pointer-events: none; z-index: 0;
     }
 
+    /* ── Header ── */
     header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(10,12,20,0.85);
-      backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(8,10,18,0.9); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      padding: 0 32px;
+      padding: 0 24px; height: 60px;
       display: flex; align-items: center; justify-content: space-between;
-      height: 64px;
     }
-    .logo {
-      display: flex; align-items: center; gap: 12px;
-      text-decoration: none;
-    }
+    .logo { display: flex; align-items: center; gap: 10px; }
     .logo-icon {
-      width: 38px; height: 38px; flex-shrink: 0;
+      width: 36px; height: 36px; flex-shrink: 0;
       background: linear-gradient(140deg, #7c3aed 0%, #4f6ef7 55%, #3ec9a7 100%);
-      border-radius: 11px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 18px rgba(124,58,237,0.45), 0 1px 4px rgba(0,0,0,0.4);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.4);
       position: relative; overflow: hidden;
     }
-    .logo-icon::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-      border-radius: inherit;
-    }
+    .logo-icon::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 60%); }
     .logo-text { display: flex; flex-direction: column; gap: 1px; }
     .logo-title {
-      font-size: 16px; font-weight: 800; letter-spacing: -0.01em;
+      font-size: 15px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1;
       background: linear-gradient(90deg, #e8eaf0 30%, #9b8dff 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; line-height: 1.1;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .logo-sub {
-      font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--text-muted); line-height: 1;
-    }
-    .header-actions { display: flex; gap: 10px; align-items: center; }
-    .badge {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
-      padding: 3px 10px; border-radius: 20px;
-      background: rgba(155,109,255,0.15);
-      color: var(--accent-purple);
-      border: 1px solid rgba(155,109,255,0.3);
-    }
+    .logo-sub { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; background: rgba(155,109,255,0.12); color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.25); }
+    .provider-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); font-weight: 600; }
+    .provider-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-teal); box-shadow: 0 0 5px rgba(62,201,167,0.5); }
 
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; font-family: inherit;
+      padding: 7px 14px; border-radius: var(--radius-sm); border: none;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap; user-select: none;
+    }
+    .btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg-card2); color: var(--text-primary); border-color: var(--border-light); }
+    .btn-settings { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit; transition: all 0.18s; }
+    .btn-settings:hover { background: var(--bg-card2); color: var(--text-primary); }
+    .btn-settings svg { width: 13px; height: 13px; }
+    .btn-primary { background: linear-gradient(135deg,#e8c56d,#d4a030); color: #080a12; box-shadow: 0 4px 14px rgba(232,197,109,0.28); font-weight: 700; }
+    .btn-primary:hover { background: linear-gradient(135deg,#f0d080,#e8c56d); box-shadow: 0 6px 20px rgba(232,197,109,0.4); transform: translateY(-1px); }
+    .btn-primary:active { transform: none; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-purple { background: rgba(155,109,255,0.12); color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3); }
+    .btn-purple:hover { background: rgba(155,109,255,0.2); border-color: var(--accent-purple); }
+    .btn-sm { padding: 5px 11px; font-size: 11px; }
+    .btn-xs { padding: 3px 8px; font-size: 10px; border-radius: 5px; }
+    .btn-ai {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: linear-gradient(135deg, rgba(155,109,255,0.15), rgba(91,141,238,0.1));
+      border: 1px solid rgba(155,109,255,0.3); color: var(--accent-purple);
+      border-radius: 6px; padding: 4px 9px; font-size: 10px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.18s; white-space: nowrap;
+    }
+    .btn-ai:hover { background: rgba(155,109,255,0.22); border-color: var(--accent-purple); }
+    .btn-ai.loading { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Layout ── */
     main {
       position: relative; z-index: 1;
-      max-width: 1400px; margin: 0 auto;
-      padding: 32px 24px 80px;
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      grid-template-rows: auto auto 1fr;
-      gap: 24px;
+      display: grid; grid-template-columns: 320px 1fr;
+      height: calc(100vh - 60px); overflow: hidden;
     }
 
-    .section-title {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--text-muted);
-      margin-bottom: 14px;
+    /* ── Left Panel ── */
+    .left-panel {
+      border-right: 1px solid var(--border);
+      overflow-y: auto; display: flex; flex-direction: column;
+      background: var(--bg-card);
+    }
+    .left-panel::-webkit-scrollbar { width: 3px; }
+    .left-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
+    .panel-section:last-child { border-bottom: none; flex: 1; }
+
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 12px;
       display: flex; align-items: center; gap: 8px;
     }
-    .section-title::after {
-      content: ''; flex: 1; height: 1px;
-      background: linear-gradient(to right, var(--border), transparent);
-    }
+    .section-label svg { width: 11px; height: 11px; }
 
-    .director-panel { grid-column: 1; grid-row: 1 / 3; }
-    .director-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius);
-      padding: 24px;
-      position: relative; overflow: hidden;
+    /* ── Form elements ── */
+    .field-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 10px; }
+    .field-row .field { flex: 1; }
+    .field { margin-bottom: 10px; }
+    .field-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--text-muted); display: block; margin-bottom: 5px;
     }
-    .director-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, var(--accent-gold), #f0a030, var(--accent-gold));
+    .f-input, .f-select, .f-textarea {
+      width: 100%; background: var(--bg-deep); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 11px; color: var(--text-primary);
+      font-size: 13px; font-family: inherit; outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s; resize: none;
     }
-    .director-avatar {
-      width: 64px; height: 64px;
-      background: linear-gradient(135deg, #e8c56d 0%, #c8860a 100%);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; margin-bottom: 16px;
-      box-shadow: var(--glow-gold);
-      position: relative;
+    .f-input:focus, .f-select:focus, .f-textarea:focus {
+      border-color: var(--accent-purple); box-shadow: 0 0 0 2px rgba(155,109,255,0.12);
     }
-    .director-avatar::after {
-      content: 'D';
-      position: absolute; bottom: -2px; right: -2px;
-      width: 22px; height: 22px;
-      background: var(--accent-gold);
-      border-radius: 50%; border: 2px solid var(--bg-card);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 800; color: #0a0c14;
-      line-height: 18px; text-align: center;
-    }
-    .director-name { font-size: 20px; font-weight: 700; color: var(--accent-gold); margin-bottom: 4px; }
-    .director-role { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+    .f-input::placeholder, .f-textarea::placeholder { color: var(--text-muted); }
+    .f-textarea { height: 80px; line-height: 1.6; }
+    .f-select { cursor: pointer; }
+    .f-select option { background: var(--bg-card); }
 
-    .form-group { margin-bottom: 16px; }
-    .form-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      color: var(--text-muted); text-transform: uppercase;
-      display: block; margin-bottom: 6px;
-    }
-    .form-input, .form-textarea, .form-select {
-      width: 100%;
-      background: var(--bg-deep);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      color: var(--text-primary);
-      font-size: 13px; font-family: inherit;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      resize: none;
-    }
-    .form-input:focus, .form-textarea:focus, .form-select:focus {
-      outline: none;
-      border-color: var(--accent-gold);
-      box-shadow: 0 0 0 3px rgba(232,197,109,0.1);
-    }
-    .form-textarea { height: 90px; line-height: 1.6; }
-    .form-select option { background: var(--bg-card); }
-
-    .style-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    /* Chip tags */
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip {
-      font-size: 11px; font-weight: 600; padding: 4px 12px;
-      border-radius: 20px; border: 1px solid var(--border);
-      color: var(--text-secondary); cursor: pointer;
-      transition: all 0.2s; user-select: none; background: transparent;
+      font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; user-select: none; background: transparent;
     }
     .chip:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
-    .chip.active {
-      background: rgba(232,197,109,0.12);
-      border-color: var(--accent-gold);
-      color: var(--accent-gold);
-    }
+    .chip.active { background: rgba(232,197,109,0.1); border-color: var(--accent-gold); color: var(--accent-gold); }
 
-    .characters-panel { grid-column: 2; grid-row: 1; }
-    .characters-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
+    /* AI suggestion dropdown */
+    .suggest-wrap { position: relative; }
+    .suggest-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+      background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      display: none;
     }
+    .suggest-dropdown.open { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+    .suggest-item {
+      padding: 9px 13px; font-size: 12px; color: var(--text-secondary);
+      cursor: pointer; border-bottom: 1px solid var(--border); transition: all 0.12s;
+    }
+    .suggest-item:last-child { border-bottom: none; }
+    .suggest-item:hover { background: rgba(155,109,255,0.08); color: var(--text-primary); }
 
+    /* Keyword picker */
+    .keyword-picker {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+      background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: 12px; padding: 14px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+      display: none;
+    }
+    .keyword-picker.open { display: block; animation: fadeIn 0.15s ease; }
+    .kp-category { margin-bottom: 10px; }
+    .kp-cat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .kp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .kp-chip {
+      font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; transition: all 0.12s; user-select: none; background: transparent;
+    }
+    .kp-chip.active { background: rgba(91,141,238,0.12); border-color: var(--accent-blue); color: var(--accent-blue); }
+    .kp-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .kp-count { font-size: 10px; color: var(--text-muted); }
+
+    /* Characters */
+    .char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .char-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      position: relative; overflow: hidden;
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      cursor: default;
+      background: var(--bg-deep); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px;
+      position: relative; overflow: hidden; transition: border-color 0.18s;
     }
-    .char-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-light);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
+    .char-card:hover { border-color: var(--border-light); }
     .char-card[data-color="blue"]::before   { background: var(--accent-blue); }
     .char-card[data-color="purple"]::before { background: var(--accent-purple); }
     .char-card[data-color="teal"]::before   { background: var(--accent-teal); }
     .char-card[data-color="rose"]::before   { background: var(--accent-rose); }
     .char-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-    .char-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .char-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-    .char-card[data-color="blue"]   .char-avatar { background: rgba(91,141,238,0.2); }
-    .char-card[data-color="purple"] .char-avatar { background: rgba(155,109,255,0.2); }
-    .char-card[data-color="teal"]   .char-avatar { background: rgba(62,201,167,0.2); }
-    .char-card[data-color="rose"]   .char-avatar { background: rgba(240,98,146,0.2); }
-
+    .char-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+    .char-emoji { font-size: 16px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .char-card[data-color="blue"]   .char-emoji { background: rgba(91,141,238,0.18); }
+    .char-card[data-color="purple"] .char-emoji { background: rgba(155,109,255,0.18); }
+    .char-card[data-color="teal"]   .char-emoji { background: rgba(62,201,167,0.18); }
+    .char-card[data-color="rose"]   .char-emoji { background: rgba(240,98,146,0.18); }
     .char-name-input {
-      background: transparent; border: none; border-bottom: 1px solid var(--border);
-      color: var(--text-primary); font-size: 14px; font-weight: 700;
-      width: 100%; padding: 2px 0; font-family: inherit; outline: none;
-      transition: border-color 0.2s;
+      background: transparent; border: none; color: var(--text-primary); font-size: 12px; font-weight: 700;
+      width: 100%; font-family: inherit; outline: none;
+      border-bottom: 1px solid var(--border); padding-bottom: 1px;
     }
-    .char-name-input:focus { border-color: var(--accent-blue); }
-    .char-role-input {
-      background: transparent; border: none;
-      color: var(--text-secondary); font-size: 11px;
-      width: 100%; padding: 2px 0; font-family: inherit; outline: none;
-      margin-top: 2px;
-    }
+    .char-role-input { background: transparent; border: none; color: var(--text-muted); font-size: 10px; width: 100%; font-family: inherit; outline: none; margin-top: 2px; }
     .char-desc-input {
-      width: 100%; background: var(--bg-deep);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 8px 10px; color: var(--text-secondary);
-      font-size: 12px; font-family: inherit;
-      height: 64px; resize: none; outline: none; line-height: 1.5;
-      transition: border-color 0.2s;
+      width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 5px;
+      padding: 5px 7px; color: var(--text-secondary); font-size: 10px; font-family: inherit;
+      height: 44px; resize: none; outline: none; line-height: 1.5;
     }
-    .char-desc-input:focus { border-color: var(--accent-blue); }
-
-    .char-card-footer {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-top: 10px;
-    }
-    .char-status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
-    .status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent-teal);
-      box-shadow: 0 0 6px rgba(62,201,167,0.6);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .btn-remove {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); font-size: 14px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; line-height: 1;
-    }
-    .btn-remove:hover { background: rgba(240,98,146,0.15); border-color: var(--accent-rose); color: var(--accent-rose); }
-
+    .char-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+    .char-status { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-muted); }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-teal); box-shadow: 0 0 5px rgba(62,201,167,0.5); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .btn-remove { width: 20px; height: 20px; border-radius: 50%; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .btn-remove:hover { background: rgba(240,98,146,0.12); border-color: var(--accent-rose); color: var(--accent-rose); }
     .add-char-card {
-      background: transparent;
-      border: 1.5px dashed var(--border);
-      border-radius: var(--radius);
-      min-height: 160px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 8px; cursor: pointer;
-      transition: all 0.2s; color: var(--text-muted);
+      background: transparent; border: 1.5px dashed var(--border); border-radius: 10px;
+      min-height: 100px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 5px; cursor: pointer; transition: all 0.18s; color: var(--text-muted);
     }
-    .add-char-card:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(91,141,238,0.04); }
-    .add-char-icon {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; transition: all 0.2s;
-    }
-    .add-char-card:hover .add-char-icon { background: rgba(91,141,238,0.15); }
-    .add-char-label { font-size: 12px; font-weight: 600; }
+    .add-char-card:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(91,141,238,0.03); }
+    .add-char-icon { font-size: 18px; }
+    .add-char-label { font-size: 10px; font-weight: 600; }
 
-    .control-bar {
-      grid-column: 2; grid-row: 2;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    }
-    .control-group { display: flex; align-items: center; gap: 8px; }
-    .control-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      color: var(--text-muted); text-transform: uppercase; white-space: nowrap;
-    }
-    .control-select {
-      background: var(--bg-deep); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px;
-      padding: 7px 12px; font-family: inherit; outline: none;
-      transition: border-color 0.2s; cursor: pointer;
-    }
-    .control-select:focus { border-color: var(--accent-blue); }
-    .divider-v { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
-    .spacer { flex: 1; }
+    /* Options row */
+    .options-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .slider-row input[type=range] { flex: 1; accent-color: var(--accent-purple); }
+    .slider-val { font-size: 11px; color: var(--accent-purple); font-weight: 700; min-width: 28px; }
 
-    .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 13px; font-weight: 600; font-family: inherit;
-      padding: 9px 18px; border-radius: var(--radius-sm);
-      border: none; cursor: pointer;
-      transition: all 0.2s; letter-spacing: 0.01em;
-      white-space: nowrap; user-select: none;
-    }
-    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-
-    .btn-primary {
+    /* Generate button */
+    .generate-btn {
+      width: 100%; padding: 12px; margin-top: 4px;
       background: linear-gradient(135deg, #e8c56d, #d4a030);
-      color: #0a0c14; box-shadow: 0 4px 16px rgba(232,197,109,0.3);
+      color: #080a12; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 16px rgba(232,197,109,0.28);
+      position: relative; overflow: hidden; letter-spacing: 0.01em;
     }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #f0d080, #e8c56d);
-      box-shadow: 0 6px 24px rgba(232,197,109,0.45); transform: translateY(-1px);
-    }
-    .btn-primary:active { transform: translateY(0); box-shadow: none; }
-
-    .btn-secondary {
-      background: rgba(91,141,238,0.12); color: var(--accent-blue);
-      border: 1px solid rgba(91,141,238,0.3);
-    }
-    .btn-secondary:hover { background: rgba(91,141,238,0.2); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
-
-    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--bg-card2); color: var(--text-primary); border-color: var(--border-light); }
-
-    .btn-danger { background: rgba(240,98,146,0.1); color: var(--accent-rose); border: 1px solid rgba(240,98,146,0.25); }
-    .btn-danger:hover { background: rgba(240,98,146,0.18); border-color: var(--accent-rose); }
-
-    .btn-lg { padding: 12px 28px; font-size: 14px; border-radius: 10px; }
-    .btn-sm { padding: 6px 13px; font-size: 12px; }
-
-    .btn-generate { position: relative; overflow: hidden; }
-    .btn-generate::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-      transform: translateX(-100%); transition: transform 0.5s;
-    }
-    .btn-generate:hover::after { transform: translateX(100%); }
-
-    .story-panel { grid-column: 1 / 3; grid-row: 3; }
-    .story-container {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-    }
-    .story-header {
-      padding: 16px 24px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .story-title { font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-    .story-actions { display: flex; gap: 8px; }
-
-    .tabs { display: flex; gap: 2px; background: var(--bg-deep); padding: 3px; border-radius: var(--radius-sm); }
-    .tab {
-      font-size: 12px; font-weight: 600; padding: 5px 14px;
-      border-radius: 6px; cursor: pointer;
-      color: var(--text-muted); border: none;
-      background: transparent; font-family: inherit; transition: all 0.2s;
-    }
-    .tab.active { background: var(--bg-card2); color: var(--text-primary); }
-    .tab:hover:not(.active) { color: var(--text-secondary); }
-
-    .story-body { display: grid; grid-template-columns: 1fr 320px; min-height: 400px; }
-
-    .story-text-area {
-      padding: 32px; border-right: 1px solid var(--border);
-      overflow-y: auto; max-height: 500px;
-      line-height: 1.9; color: var(--text-primary); font-size: 15px;
-    }
-    .story-text-area::-webkit-scrollbar { width: 4px; }
-    .story-text-area::-webkit-scrollbar-track { background: transparent; }
-    .story-text-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    .story-empty {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      height: 100%; min-height: 300px;
-      color: var(--text-muted); gap: 12px; text-align: center;
-    }
-    .story-empty-icon { font-size: 48px; opacity: 0.4; }
-    .story-empty-text { font-size: 14px; }
-    .story-empty-hint { font-size: 12px; opacity: 0.6; }
-
-    .agent-log {
-      overflow-y: auto; max-height: 500px; padding: 16px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .agent-log::-webkit-scrollbar { width: 4px; }
-    .agent-log::-webkit-scrollbar-track { background: transparent; }
-    .agent-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    .log-header {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-      color: var(--text-muted); text-transform: uppercase;
-      padding: 0 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
-    }
-
-    .log-message {
-      background: var(--bg-card2); border-radius: 10px; padding: 10px 12px;
-      border-left: 2px solid var(--border); animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-    .log-message.director     { border-left-color: var(--accent-gold); }
-    .log-message.char-blue    { border-left-color: var(--accent-blue); }
-    .log-message.char-purple  { border-left-color: var(--accent-purple); }
-    .log-message.char-teal    { border-left-color: var(--accent-teal); }
-    .log-message.char-rose    { border-left-color: var(--accent-rose); }
-    .log-message.composer     { border-left-color: #e8c56d; }
-    .log-message.safety       { border-left-color: var(--accent-teal); }
-
-    .log-sender { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
-    .log-message.director    .log-sender { color: var(--accent-gold); }
-    .log-message.char-blue   .log-sender { color: var(--accent-blue); }
-    .log-message.char-purple .log-sender { color: var(--accent-purple); }
-    .log-message.char-teal   .log-sender { color: var(--accent-teal); }
-    .log-message.char-rose   .log-sender { color: var(--accent-rose); }
-    .log-message.composer    .log-sender { color: #e8c56d; }
-    .log-message.safety      .log-sender { color: var(--accent-teal); }
-
-    .log-content { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-
-    .typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
-    .typing-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--text-muted); animation: typing 1.2s infinite;
-    }
+    .generate-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent); transform: translateX(-100%); transition: transform 0.5s; }
+    .generate-btn:hover::after { transform: translateX(100%); }
+    .generate-btn:hover { background: linear-gradient(135deg,#f0d080,#e8c56d); box-shadow: 0 6px 24px rgba(232,197,109,0.4); transform: translateY(-1px); }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .typing-indicator { display: flex; gap: 3px; }
+    .typing-dot { width: 5px; height: 5px; border-radius: 50%; background: #080a12; animation: typing 1.2s infinite; }
     .typing-dot:nth-child(2) { animation-delay: 0.2s; }
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+    @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-4px);opacity:1} }
 
-    .progress-bar-wrap { display: none; padding: 0 24px 20px; gap: 10px; align-items: center; }
+    /* ── Right Panel ── */
+    .right-panel { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex; align-items: center; gap: 2px; padding: 10px 16px 0;
+      border-bottom: 1px solid var(--border); background: var(--bg-card); flex-shrink: 0;
+    }
+    .tab-btn {
+      font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 8px 8px 0 0;
+      cursor: pointer; color: var(--text-muted); border: none; background: transparent;
+      font-family: inherit; transition: all 0.15s; border: 1px solid transparent;
+      border-bottom: none; position: relative; bottom: -1px;
+    }
+    .tab-btn.active {
+      background: var(--bg-deep); color: var(--text-primary);
+      border-color: var(--border); border-bottom-color: var(--bg-deep);
+    }
+    .tab-btn:hover:not(.active) { color: var(--text-secondary); }
+    .tab-spacer { flex: 1; }
+    .tab-actions { display: flex; gap: 6px; padding-bottom: 8px; }
+
+    /* Story content */
+    .story-content { flex: 1; overflow: hidden; position: relative; }
+    .tab-panel { display: none; height: 100%; overflow-y: auto; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+    .tab-panel::-webkit-scrollbar { width: 4px; }
+    .tab-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Story text panel */
+    #storyPanel { padding: 0 28px 24px; }
+
+    /* Progress */
+    .progress-bar-wrap { display: none; padding: 12px 28px 0; flex-direction: column; gap: 6px; }
     .progress-bar-wrap.visible { display: flex; }
-    .progress-bar { flex: 1; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-      border-radius: 4px; width: 0%; transition: width 0.4s ease;
-    }
-    .progress-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .progress-track { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg,var(--accent-blue),var(--accent-purple)); border-radius: 3px; width: 0%; transition: width 0.4s ease; }
+    .progress-text { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
 
+    /* Chapter block */
+    .chapter-block { padding-top: 24px; }
+    .chapter-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .chapter-num {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      background: rgba(232,197,109,0.12); color: var(--accent-gold);
+      border: 1px solid rgba(232,197,109,0.25); border-radius: 20px; padding: 3px 10px;
+    }
+    .chapter-title { font-size: 17px; font-weight: 800; color: var(--text-primary); }
+    .chapter-prose { font-size: 14px; line-height: 1.9; color: var(--text-primary); }
+    .chapter-prose p { margin-bottom: 14px; }
+    .chapter-prose p:last-child { margin-bottom: 0; }
+
+    /* Story empty */
+    .story-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-muted); text-align: center; padding: 40px; }
+    .story-empty-icon { font-size: 44px; opacity: 0.35; }
+    .story-empty-text { font-size: 15px; font-weight: 600; }
+    .story-empty-hint { font-size: 12px; opacity: 0.6; }
+
+    /* Branch choices */
+    .branch-section { padding: 20px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .branch-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .branch-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .branch-cards { display: flex; flex-direction: column; gap: 8px; }
+    .branch-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 12px;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .branch-card:hover { border-color: var(--accent-blue); background: rgba(91,141,238,0.04); transform: translateX(3px); }
+    .branch-card.selected { border-color: var(--accent-gold); background: rgba(232,197,109,0.06); }
+    .branch-card.dimmed { opacity: 0.4; pointer-events: none; }
+    .branch-letter {
+      width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; background: var(--border); color: var(--text-muted);
+      transition: all 0.18s;
+    }
+    .branch-card:hover .branch-letter { background: rgba(91,141,238,0.2); color: var(--accent-blue); }
+    .branch-card.selected .branch-letter { background: rgba(232,197,109,0.2); color: var(--accent-gold); }
+    .branch-body { flex: 1; min-width: 0; }
+    .branch-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .branch-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .branch-loading { display: flex; align-items: center; gap: 8px; padding: 16px 0; color: var(--text-muted); font-size: 12px; }
+
+    /* Agent log */
+    .agent-log-panel { padding: 0; }
+    .log-header-row { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .log-messages { padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+    .log-msg { background: var(--bg-card2); border-radius: 8px; padding: 9px 11px; border-left: 2px solid var(--border); animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+    .log-msg.director   { border-left-color: var(--accent-gold); }
+    .log-msg.char-blue  { border-left-color: var(--accent-blue); }
+    .log-msg.char-purple{ border-left-color: var(--accent-purple); }
+    .log-msg.char-teal  { border-left-color: var(--accent-teal); }
+    .log-msg.char-rose  { border-left-color: var(--accent-rose); }
+    .log-msg.composer   { border-left-color: var(--accent-gold); }
+    .log-msg.safety     { border-left-color: var(--accent-teal); }
+    .log-sender { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+    .log-msg.director    .log-sender { color: var(--accent-gold); }
+    .log-msg.char-blue   .log-sender { color: var(--accent-blue); }
+    .log-msg.char-purple .log-sender { color: var(--accent-purple); }
+    .log-msg.char-teal   .log-sender { color: var(--accent-teal); }
+    .log-msg.char-rose   .log-sender { color: var(--accent-rose); }
+    .log-msg.composer    .log-sender { color: var(--accent-gold); }
+    .log-msg.safety      .log-sender { color: var(--accent-teal); }
+    .log-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+    .log-empty { text-align: center; color: var(--text-muted); font-size: 11px; padding: 32px; }
+
+    /* ── Story Tree ── */
+    .tree-panel { padding: 0; height: 100%; display: flex; flex-direction: column; }
+    .tree-toolbar {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .tree-scroll { flex: 1; overflow: auto; position: relative; }
+    .tree-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .tree-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    #treesvg { min-width: 100%; display: block; }
+
+    .tree-node-group { cursor: pointer; }
+    .tree-node-group:hover .node-circle { filter: brightness(1.3); }
+    .node-tooltip {
+      position: absolute; background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--text-primary);
+      pointer-events: none; z-index: 100; max-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: none;
+    }
+    .tree-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-muted); font-size: 12px; }
+
+    /* World Map placeholder */
+    .map-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--text-muted); }
+    .map-preview { width: 480px; max-width: 90%; height: 280px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+    .map-icon { font-size: 40px; opacity: 0.3; }
+    .map-coming { font-size: 13px; font-weight: 600; opacity: 0.5; }
+    .map-sub { font-size: 11px; opacity: 0.35; }
+
+    /* Stats bar */
     .stats-bar {
-      display: flex; gap: 24px; align-items: center;
-      padding: 16px 24px; border-top: 1px solid var(--border); background: var(--bg-deep);
+      display: flex; gap: 20px; align-items: center;
+      padding: 10px 20px; border-top: 1px solid var(--border);
+      background: var(--bg-deep); flex-shrink: 0;
     }
-    .stat { display: flex; flex-direction: column; gap: 2px; }
-    .stat-value { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1; }
-    .stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-    .stat-divider { width: 1px; height: 28px; background: var(--border); }
+    .stat { display: flex; flex-direction: column; gap: 1px; }
+    .stat-value { font-size: 16px; font-weight: 800; line-height: 1; }
+    .stat-label { font-size: 9px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat-div { width: 1px; height: 24px; background: var(--border); }
 
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-      .director-panel, .characters-panel, .control-bar, .story-panel { grid-column: 1; grid-row: auto; }
-      .story-body { grid-template-columns: 1fr; }
-      .agent-log { border-top: 1px solid var(--border); max-height: 300px; }
-    }
-
-    .toast-container {
-      position: fixed; bottom: 24px; right: 24px;
-      display: flex; flex-direction: column-reverse; gap: 8px; z-index: 999;
-    }
-    .toast {
-      background: var(--bg-card2); border: 1px solid var(--border-light);
-      border-radius: var(--radius-sm); padding: 10px 16px;
-      font-size: 13px; color: var(--text-primary);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      animation: toastIn 0.3s ease;
-      display: flex; align-items: center; gap: 8px;
-    }
-    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    /* ── Toast ── */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column-reverse; gap: 7px; z-index: 999; }
+    .toast { background: var(--bg-card2); border: 1px solid var(--border-light); border-radius: 8px; padding: 9px 14px; font-size: 12px; color: var(--text-primary); box-shadow: 0 8px 28px rgba(0,0,0,0.4); animation: toastIn 0.25s ease; display: flex; align-items: center; gap: 7px; }
+    @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
     .toast.success { border-left: 3px solid var(--accent-teal); }
     .toast.error   { border-left: 3px solid var(--accent-rose); }
     .toast.info    { border-left: 3px solid var(--accent-blue); }
 
-    /* ══════════════════════════════════════════
-       Setup Modal
-    ══════════════════════════════════════════ */
-    .setup-overlay {
-      position: fixed; inset: 0; z-index: 1000;
-      background: rgba(5, 7, 14, 0.88);
-      backdrop-filter: blur(24px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
-      animation: overlayIn 0.35s ease;
-    }
-    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    /* ── Setup Modal ── */
+    .setup-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(5,7,14,0.9); backdrop-filter: blur(24px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: overlayIn 0.3s ease; }
+    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
     .setup-overlay.hidden { display: none; }
-
-    .setup-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 20px;
-      width: 100%; max-width: 500px;
-      overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
-      animation: cardIn 0.4s cubic-bezier(0.22,1,0.36,1);
-    }
-    @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: none; } }
-
-    .setup-top {
-      padding: 32px 32px 0;
-      background: linear-gradient(160deg, rgba(124,58,237,0.08) 0%, rgba(79,110,247,0.05) 100%);
-      text-align: center; border-bottom: 1px solid var(--border);
-      padding-bottom: 28px;
-    }
-    .setup-logo {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px;
-      background: linear-gradient(140deg, #7c3aed 0%, #4f6ef7 55%, #3ec9a7 100%);
-      border-radius: 16px;
-      box-shadow: 0 8px 28px rgba(124,58,237,0.5);
-      margin-bottom: 16px;
-    }
-    .setup-title {
-      font-size: 22px; font-weight: 800; color: var(--text-primary);
-      letter-spacing: -0.02em; margin-bottom: 6px;
-    }
-    .setup-subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-
-    .setup-body { padding: 28px 32px 32px; }
-
-    .setup-section-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--text-muted);
-      margin-bottom: 12px;
-    }
-
-    /* Provider cards */
-    .provider-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 10px; margin-bottom: 24px;
-    }
-    .provider-card {
-      border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 14px 10px;
-      cursor: pointer; transition: all 0.18s;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 8px;
-      background: transparent; text-align: center;
-    }
+    .setup-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 20px; width: 100%; max-width: 490px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.6); animation: cardIn 0.35s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes cardIn { from{opacity:0;transform:translateY(20px) scale(0.97)} to{opacity:1;transform:none} }
+    .setup-top { padding: 28px 28px 24px; background: linear-gradient(160deg,rgba(124,58,237,0.07) 0%,rgba(79,110,247,0.04) 100%); border-bottom: 1px solid var(--border); text-align: center; }
+    .setup-logo { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; background: linear-gradient(140deg,#7c3aed 0%,#4f6ef7 55%,#3ec9a7 100%); border-radius: 14px; box-shadow: 0 8px 24px rgba(124,58,237,0.45); margin-bottom: 14px; }
+    .setup-title { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 5px; }
+    .setup-subtitle { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .setup-body { padding: 24px 28px 28px; }
+    .setup-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+    .provider-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+    .provider-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 8px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 7px; background: transparent; text-align: center; }
     .provider-card:hover { border-color: var(--border-light); background: var(--bg-card2); }
-    .provider-card.selected {
-      border-color: var(--accent-purple);
-      background: rgba(155,109,255,0.08);
-      box-shadow: 0 0 0 3px rgba(155,109,255,0.12);
-    }
-    .provider-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-    .provider-name {
-      font-size: 12px; font-weight: 700; color: var(--text-primary); line-height: 1;
-    }
-    .provider-hint {
-      font-size: 10px; color: var(--text-muted); line-height: 1.3;
-    }
-
-    /* API key input area */
-    .setup-field { margin-bottom: 16px; }
-    .setup-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      text-transform: uppercase; color: var(--text-muted);
-      display: block; margin-bottom: 7px;
-    }
-    .setup-input {
-      width: 100%; background: var(--bg-deep);
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 11px 14px; color: var(--text-primary);
-      font-size: 13px; font-family: inherit; outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .setup-input:focus {
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 0 3px rgba(155,109,255,0.12);
-    }
+    .provider-card.selected { border-color: var(--accent-purple); background: rgba(155,109,255,0.07); box-shadow: 0 0 0 3px rgba(155,109,255,0.1); }
+    .provider-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+    .provider-name { font-size: 11px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .provider-hint { font-size: 9px; color: var(--text-muted); line-height: 1.3; }
+    .setup-field { margin-bottom: 14px; }
+    .setup-label { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px; }
+    .setup-input { width: 100%; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 9px; padding: 10px 13px; color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.18s,box-shadow 0.18s; }
+    .setup-input:focus { border-color: var(--accent-purple); box-shadow: 0 0 0 2px rgba(155,109,255,0.1); }
     .setup-input::placeholder { color: var(--text-muted); }
-
-    .setup-input-row { display: flex; gap: 8px; }
-    .setup-input-row .setup-input { flex: 1; }
-    .setup-input-row select.setup-input { flex: 0 0 160px; cursor: pointer; }
-    .setup-input-row select.setup-input option { background: var(--bg-card); }
-
-    /* Key visibility toggle */
     .key-wrap { position: relative; }
-    .key-wrap .setup-input { padding-right: 44px; }
-    .key-toggle {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer;
-      color: var(--text-muted); padding: 2px; line-height: 1;
-      transition: color 0.15s;
-    }
+    .key-wrap .setup-input { padding-right: 40px; }
+    .key-toggle { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px; transition: color 0.15s; }
     .key-toggle:hover { color: var(--text-primary); }
-
-    .setup-hint {
-      font-size: 11px; color: var(--text-muted);
-      margin-top: 6px; display: flex; align-items: center; gap: 5px;
-    }
+    .setup-hint { font-size: 10px; color: var(--text-muted); margin-top: 5px; display: flex; align-items: center; gap: 4px; }
     .setup-hint a { color: var(--accent-blue); text-decoration: none; }
     .setup-hint a:hover { text-decoration: underline; }
-
-    .btn-setup {
-      width: 100%; padding: 13px;
-      background: linear-gradient(135deg, #7c3aed, #4f6ef7);
-      color: #fff; border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 700; font-family: inherit;
-      cursor: pointer; transition: all 0.2s; margin-top: 8px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
-      letter-spacing: 0.01em;
-    }
-    .btn-setup:hover {
-      background: linear-gradient(135deg, #6d28d9, #4060e8);
-      box-shadow: 0 6px 24px rgba(124,58,237,0.5); transform: translateY(-1px);
-    }
-    .btn-setup:active { transform: none; }
+    .btn-setup { width: 100%; padding: 12px; background: linear-gradient(135deg,#7c3aed,#4f6ef7); color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.18s; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
+    .btn-setup:hover { background: linear-gradient(135deg,#6d28d9,#4060e8); box-shadow: 0 6px 20px rgba(124,58,237,0.45); transform: translateY(-1px); }
     .btn-setup:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    /* Settings cog in header */
-    .btn-settings {
-      display: flex; align-items: center; gap: 6px;
-      background: transparent; border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 6px 12px;
-      color: var(--text-secondary); font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s; font-family: inherit;
-    }
-    .btn-settings:hover { background: var(--bg-card2); color: var(--text-primary); border-color: var(--border-light); }
-    .btn-settings svg { width: 14px; height: 14px; }
-
-    /* Provider dot in header (shows current provider) */
-    .provider-dot {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 11px; color: var(--text-muted); font-weight: 600;
-    }
-    .provider-dot-circle {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--accent-teal);
-      box-shadow: 0 0 6px rgba(62,201,167,0.6);
+    @media (max-width: 800px) {
+      main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .left-panel { max-height: 50vh; }
     }
   </style>
 </head>
@@ -660,70 +477,59 @@
 <!-- ══ Setup Modal ══ -->
 <div class="setup-overlay hidden" id="setupOverlay">
   <div class="setup-card">
-
     <div class="setup-top">
       <div class="setup-logo">
-        <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
+        <svg width="26" height="26" viewBox="0 0 22 22" fill="none">
           <circle cx="11" cy="4.5" r="2.6" fill="white" opacity="0.95"/>
           <circle cx="4"  cy="16"  r="2.2" fill="white" opacity="0.75"/>
           <circle cx="18" cy="16"  r="2.2" fill="white" opacity="0.75"/>
           <line x1="11" y1="4.5" x2="4"  y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
           <line x1="11" y1="4.5" x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
           <line x1="4"  y1="16"  x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
-          <circle cx="11" cy="12" r="1.8" fill="white" opacity="0.55"/>
           <circle cx="11" cy="12" r="0.8" fill="white" opacity="0.9"/>
         </svg>
       </div>
       <div class="setup-title">Welcome to StoryForge</div>
-      <div class="setup-subtitle">Connect your AI provider to start generating<br>multi-agent collaborative stories.</div>
+      <div class="setup-subtitle">Connect your AI provider to start generating<br>multi-agent branching stories.</div>
     </div>
-
     <div class="setup-body">
-
       <div class="setup-section-label">Choose your AI provider</div>
       <div class="provider-grid">
-
-        <div class="provider-card selected" data-provider="openai" onclick="selectProvider('openai', this)">
+        <div class="provider-card selected" data-provider="openai" onclick="selectProvider('openai',this)">
           <div class="provider-icon" style="background:linear-gradient(135deg,#10a37f,#1a7f64)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M22.28 9.28a5.76 5.76 0 00-.49-4.73 5.83 5.83 0 00-6.27-2.8A5.77 5.77 0 0011.08 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.84 5.76 5.76 0 00.49 4.73 5.83 5.83 0 006.27 2.8A5.77 5.77 0 0012.92 24a5.84 5.84 0 005.57-4.04 5.77 5.77 0 003.84-2.8 5.83 5.83 0 00-.72-6.84l.67.96zM12.92 22.4a4.33 4.33 0 01-2.78-1.01l.14-.08 4.6-2.66a.76.76 0 00.38-.66v-6.5l1.95 1.12a.07.07 0 01.04.06v5.38a4.35 4.35 0 01-4.33 4.35zM3.6 18.32a4.33 4.33 0 01-.52-2.91l.14.08 4.6 2.66a.76.76 0 00.76 0l5.62-3.25v2.24a.07.07 0 01-.03.06L9.5 19.88a4.35 4.35 0 01-5.9-1.56zm-1.1-9.54a4.32 4.32 0 012.26-1.9v5.47a.76.76 0 00.38.66l5.62 3.24-1.95 1.13a.07.07 0 01-.07 0L4.1 14.7a4.35 4.35 0 01-.6-5.91zm16.06 3.73l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.64 2.68a4.34 4.34 0 01-.67 7.83V12.9a.76.76 0 00-.37-.39zm1.94-2.92l-.13-.08-4.6-2.65a.76.76 0 00-.76 0L9.39 10.1V7.86a.07.07 0 01.03-.06l4.64-2.68a4.34 4.34 0 016.44 4.49zm-12.2 4.01l-1.95-1.13a.07.07 0 01-.04-.06V6.93a4.34 4.34 0 017.12-3.33l-.13.08-4.6 2.65a.76.76 0 00-.38.66l-.02 6.51zm1.06-2.28l2.5-1.44 2.5 1.44v2.88l-2.5 1.44-2.5-1.44V11.32z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M22.28 9.28a5.76 5.76 0 00-.49-4.73 5.83 5.83 0 00-6.27-2.8A5.77 5.77 0 0011.08 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.84 5.76 5.76 0 00.49 4.73 5.83 5.83 0 006.27 2.8A5.77 5.77 0 0012.92 24a5.84 5.84 0 005.57-4.04 5.77 5.77 0 003.84-2.8 5.83 5.83 0 00-.72-6.84l.67.96zM12.92 22.4a4.33 4.33 0 01-2.78-1.01l.14-.08 4.6-2.66a.76.76 0 00.38-.66v-6.5l1.95 1.12a.07.07 0 01.04.06v5.38a4.35 4.35 0 01-4.33 4.35zM3.6 18.32a4.33 4.33 0 01-.52-2.91l.14.08 4.6 2.66a.76.76 0 00.76 0l5.62-3.25v2.24a.07.07 0 01-.03.06L9.5 19.88a4.35 4.35 0 01-5.9-1.56zm-1.1-9.54a4.32 4.32 0 012.26-1.9v5.47a.76.76 0 00.38.66l5.62 3.24-1.95 1.13a.07.07 0 01-.07 0L4.1 14.7a4.35 4.35 0 01-.6-5.91zm16.06 3.73l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.64 2.68a4.34 4.34 0 01-.67 7.83V12.9a.76.76 0 00-.37-.39zm1.94-2.92l-.13-.08-4.6-2.65a.76.76 0 00-.76 0L9.39 10.1V7.86a.07.07 0 01.03-.06l4.64-2.68a4.34 4.34 0 016.44 4.49zm-12.2 4.01l-1.95-1.13a.07.07 0 01-.04-.06V6.93a4.34 4.34 0 017.12-3.33l-.13.08-4.6 2.65a.76.76 0 00-.38.66l-.02 6.51zm1.06-2.28l2.5-1.44 2.5 1.44v2.88l-2.5 1.44-2.5-1.44V11.32z"/></svg>
           </div>
           <div class="provider-name">OpenAI</div>
           <div class="provider-hint">GPT-4o<br>GPT-4 Turbo</div>
         </div>
-
-        <div class="provider-card" data-provider="anthropic" onclick="selectProvider('anthropic', this)">
+        <div class="provider-card" data-provider="anthropic" onclick="selectProvider('anthropic',this)">
           <div class="provider-icon" style="background:linear-gradient(135deg,#c96442,#a0412a)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M13.827 3.52h3.603L24 20.39h-3.603l-6.57-16.87zm-7.258 0H10.1l6.57 16.87H13.1l-1.38-3.6H5.467l-1.38 3.6H.48l6.09-16.87zm3.045 4.17L7.43 13.83h4.37l-2.186-6.14z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M13.827 3.52h3.603L24 20.39h-3.603l-6.57-16.87zm-7.258 0H10.1l6.57 16.87H13.1l-1.38-3.6H5.467l-1.38 3.6H.48l6.09-16.87zm3.045 4.17L7.43 13.83h4.37l-2.186-6.14z"/></svg>
           </div>
           <div class="provider-name">Anthropic</div>
           <div class="provider-hint">Claude 3.5<br>Sonnet · Opus</div>
         </div>
-
-        <div class="provider-card" data-provider="google" onclick="selectProvider('google', this)">
+        <div class="provider-card" data-provider="google" onclick="selectProvider('google',this)">
           <div class="provider-icon" style="background:linear-gradient(135deg,#4285f4,#34a853)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 11.1v2.7h4.6c-.2 1.2-.9 2.1-1.9 2.7l3 2.3c1.7-1.6 2.7-4 2.7-6.8 0-.7-.1-1.3-.2-1.9H12zm0-7.7c-4.1 0-7.5 2.7-8.7 6.4l3.4 2.6C7.5 9.8 9.6 8.3 12 8.3c1.6 0 3 .5 4.1 1.5l3-3C17.4 4.8 14.9 3.4 12 3.4zM3.3 8.7C2.5 10 2 11.4 2 13s.5 3 1.3 4.3l3.4-2.6C6.3 14 6 13.5 6 13s.3-1 .7-1.7L3.3 8.7zm1 9.1C5.5 20 8.6 21.6 12 21.6c2.9 0 5.4-1 7.3-2.6l-3-2.3c-1 .7-2.3 1-3.7 1-2.4 0-4.5-1.5-5.3-3.7l-3.3 2.5.3.3z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 11.1v2.7h4.6c-.2 1.2-.9 2.1-1.9 2.7l3 2.3c1.7-1.6 2.7-4 2.7-6.8 0-.7-.1-1.3-.2-1.9H12zm0-7.7c-4.1 0-7.5 2.7-8.7 6.4l3.4 2.6C7.5 9.8 9.6 8.3 12 8.3c1.6 0 3 .5 4.1 1.5l3-3C17.4 4.8 14.9 3.4 12 3.4zM3.3 8.7C2.5 10 2 11.4 2 13s.5 3 1.3 4.3l3.4-2.6C6.3 14 6 13.5 6 13s.3-1 .7-1.7L3.3 8.7zm1 9.1C5.5 20 8.6 21.6 12 21.6c2.9 0 5.4-1 7.3-2.6l-3-2.3c-1 .7-2.3 1-3.7 1-2.4 0-4.5-1.5-5.3-3.7l-3.3 2.5.3.3z"/></svg>
           </div>
           <div class="provider-name">Google</div>
           <div class="provider-hint">Gemini 1.5<br>Pro · Flash</div>
         </div>
-
       </div>
-
       <div class="setup-section-label">API key</div>
       <div class="setup-field">
         <div class="key-wrap">
-          <input class="setup-input" id="setupApiKey" type="password"
-            placeholder="Paste your API key here…" autocomplete="off" />
-          <button class="key-toggle" onclick="toggleKeyVisibility()" id="keyToggleBtn" title="Show/hide key">
-            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <input class="setup-input" id="setupApiKey" type="password" placeholder="Paste your API key here…" autocomplete="off"/>
+          <button class="key-toggle" onclick="toggleKeyVisibility()">
+            <svg id="eyeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <div class="setup-hint" id="setupHint">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="setup-hint">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="setupHintText">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" id="setupHintLink">platform.openai.com</a></span>
         </div>
       </div>
-
       <div class="setup-section-label">Model</div>
       <div class="setup-field">
         <select class="setup-input" id="setupModel">
@@ -732,30 +538,25 @@
           <option value="gpt-3.5-turbo">GPT-3.5 Turbo  (faster)</option>
         </select>
       </div>
-
       <button class="btn-setup" id="setupSaveBtn" onclick="saveSetup()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         Start Creating
       </button>
-
     </div>
   </div>
 </div>
 
+<!-- ══ Header ══ -->
 <header>
   <div class="logo">
     <div class="logo-icon">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <!-- agent nodes -->
+      <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
         <circle cx="11" cy="4.5" r="2.6" fill="white" opacity="0.95"/>
         <circle cx="4"  cy="16"  r="2.2" fill="white" opacity="0.75"/>
         <circle cx="18" cy="16"  r="2.2" fill="white" opacity="0.75"/>
-        <!-- connecting lines -->
         <line x1="11" y1="4.5" x2="4"  y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
         <line x1="11" y1="4.5" x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
         <line x1="4"  y1="16"  x2="18" y2="16" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0.4"/>
-        <!-- center hub -->
-        <circle cx="11" cy="12" r="1.8" fill="white" opacity="0.55"/>
         <circle cx="11" cy="12" r="0.8" fill="white" opacity="0.9"/>
       </svg>
     </div>
@@ -764,15 +565,15 @@
       <span class="logo-sub">Multi-Agent · AI</span>
     </div>
   </div>
-  <div class="header-actions">
+  <div class="header-right">
     <span class="badge">Multi-Agent</span>
-    <div class="provider-dot" id="providerStatus" style="display:none">
-      <div class="provider-dot-circle"></div>
+    <div class="provider-pill" id="providerStatus" style="display:none">
+      <div class="provider-dot"></div>
       <span id="providerStatusText">GPT-4o</span>
     </div>
     <button class="btn-settings" onclick="openSetup()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      API Settings
+      API
     </button>
     <button class="btn btn-ghost btn-sm" onclick="clearAll()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
@@ -785,32 +586,47 @@
   </div>
 </header>
 
+<!-- ══ Main ══ -->
 <main>
 
-  <!-- Director Panel -->
-  <aside class="director-panel">
-    <div class="section-title">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-      Director Agent
-    </div>
-    <div class="director-card">
-      <div class="director-avatar">🎬</div>
-      <div class="director-name">Director</div>
-      <div class="director-role">Lead Agent · Orchestrates story direction &amp; character interactions</div>
+  <!-- ── Left Panel ── -->
+  <div class="left-panel">
 
-      <div class="form-group">
-        <label class="form-label">Story Theme</label>
-        <input class="form-input" id="storyTheme" placeholder="e.g. An unexpected encounter that changes fate forever…" />
+    <!-- Story Identity -->
+    <div class="panel-section">
+      <div class="section-label">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        Director
       </div>
 
-      <div class="form-group">
-        <label class="form-label">World Setting</label>
-        <textarea class="form-textarea" id="storySetting" placeholder="Describe the era, location, and world-building…"></textarea>
+      <!-- Title -->
+      <div class="field">
+        <label class="field-label">Story Title</label>
+        <div class="suggest-wrap">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="f-input" id="storyTitle" placeholder="Enter a title…" style="flex:1"/>
+            <button class="btn-ai" id="titleAiBtn" onclick="suggestField('title')">✦ AI</button>
+          </div>
+          <div class="suggest-dropdown" id="titleDropdown"></div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Narrative Style</label>
-        <div class="style-chips" id="styleChips">
+      <!-- Theme -->
+      <div class="field">
+        <label class="field-label">Story Theme</label>
+        <div class="suggest-wrap">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="f-input" id="storyTheme" placeholder="Central conflict or emotion…" style="flex:1"/>
+            <button class="btn-ai" id="themeAiBtn" onclick="suggestField('theme')">✦ AI</button>
+          </div>
+          <div class="suggest-dropdown" id="themeDropdown"></div>
+        </div>
+      </div>
+
+      <!-- Style chips -->
+      <div class="field">
+        <label class="field-label">Narrative Style</label>
+        <div class="chips" id="styleChips">
           <button class="chip active" onclick="toggleChip(this)">Fantasy</button>
           <button class="chip" onclick="toggleChip(this)">Mystery</button>
           <button class="chip" onclick="toggleChip(this)">Sci-Fi</button>
@@ -822,657 +638,755 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Story Length</label>
-        <select class="form-select" id="storyLength">
-          <option value="short">Short (&lt; 500 words)</option>
-          <option value="medium" selected>Medium (1000–2000 words)</option>
-          <option value="long">Long (3000+ words)</option>
-        </select>
+      <!-- World Setting + Keyword picker -->
+      <div class="field">
+        <label class="field-label">World Setting</label>
+        <div class="suggest-wrap" style="position:relative">
+          <textarea class="f-textarea" id="storySetting" placeholder="Describe the world, era, and atmosphere…"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:5px">
+            <button class="btn-ai" id="kwBtn" onclick="toggleKeywordPicker()">🔑 Suggest Keywords</button>
+          </div>
+          <div class="keyword-picker" id="keywordPicker"></div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Director's Notes <span style="color:var(--text-muted);font-weight:400;text-transform:none;font-size:10px">(optional)</span></label>
-        <textarea class="form-textarea" id="directorNote" style="height:72px" placeholder="Special instructions, e.g. add a plot twist in Act 3…"></textarea>
+      <!-- Director notes -->
+      <div class="field" style="margin-bottom:0">
+        <label class="field-label">Director's Notes <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--text-muted)">(optional)</span></label>
+        <textarea class="f-textarea" id="directorNote" style="height:60px" placeholder="Special instructions for the agents…"></textarea>
       </div>
+    </div>
 
-      <button class="btn btn-primary btn-generate" style="width:100%;justify-content:center;margin-top:4px" onclick="generateStory()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Generate Story
+    <!-- Characters -->
+    <div class="panel-section">
+      <div class="section-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Character Agents
+      </div>
+      <div class="char-grid" id="characterGrid"></div>
+    </div>
+
+    <!-- Options + Generate -->
+    <div class="panel-section">
+      <div class="section-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Options
+      </div>
+      <div class="options-row">
+        <div class="field">
+          <label class="field-label">Model</label>
+          <select class="f-select" id="modelSelect">
+            <option>GPT-4o</option><option>GPT-4 Turbo</option><option>Claude 3.5</option><option>Gemini 1.5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Chapter Length</label>
+          <select class="f-select" id="chapterLength">
+            <option value="brief">Brief (~300w)</option>
+            <option value="medium" selected>Medium (~700w)</option>
+            <option value="detailed">Detailed (~1500w)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="field-label">Creativity</label>
+        <div class="slider-row">
+          <input type="range" id="tempSlider" min="0" max="100" value="80" oninput="updateTemp(this)"/>
+          <span class="slider-val" id="tempVal">0.80</span>
+        </div>
+      </div>
+      <button class="generate-btn" id="generateBtn" onclick="startStory()" style="margin-top:14px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start Story
       </button>
     </div>
-  </aside>
 
-  <!-- Characters Panel -->
-  <section class="characters-panel">
-    <div class="section-title">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      Character Agents
-    </div>
-    <div class="characters-grid" id="characterGrid"></div>
-  </section>
+  </div><!-- /left-panel -->
 
-  <!-- Control Bar -->
-  <div class="control-bar">
-    <div class="control-group">
-      <span class="control-label">Model</span>
-      <select class="control-select" id="modelSelect">
-        <option>GPT-4o</option>
-        <option>GPT-4 Turbo</option>
-        <option>Claude 3.5 Sonnet</option>
-        <option>Gemini 1.5 Pro</option>
-      </select>
-    </div>
-    <div class="divider-v"></div>
-    <div class="control-group">
-      <span class="control-label">Chapters</span>
-      <select class="control-select" id="iterRounds">
-        <option value="1">1 Chapter</option>
-        <option value="2" selected>2 Chapters</option>
-        <option value="3">3 Chapters</option>
-        <option value="5">5 Chapters</option>
-      </select>
-    </div>
-    <div class="divider-v"></div>
-    <div class="control-group">
-      <span class="control-label">Creativity</span>
-      <input type="range" id="tempSlider" min="0" max="100" value="75"
-        style="width:90px;accent-color:var(--accent-purple)" oninput="updateTemp(this)" />
-      <span id="tempVal" style="font-size:12px;color:var(--accent-purple);font-weight:700;min-width:28px">0.75</span>
-    </div>
-    <div class="spacer"></div>
-    <button class="btn btn-secondary btn-sm" onclick="addCharacter()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Character
-    </button>
-    <button class="btn btn-ghost btn-sm" onclick="resetCharacters()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-      Reset
-    </button>
-  </div>
+  <!-- ── Right Panel ── -->
+  <div class="right-panel">
 
-  <!-- Story Output -->
-  <section class="story-panel">
-    <div class="section-title">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Story Output
-    </div>
-    <div class="story-container">
-      <div class="story-header">
-        <div class="story-title">
-          <span id="storyTitleDisplay">Untitled Story</span>
-        </div>
-        <div class="story-actions">
-          <div class="tabs">
-            <button class="tab active" onclick="switchTab(this,'story')">Story</button>
-            <button class="tab" onclick="switchTab(this,'log')">Agent Dialogue</button>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="copyStory()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Copy
-          </button>
-        </div>
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
+      <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
+      <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">💬 Agent Log</button>
+      <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
+      <div class="tab-spacer"></div>
+      <div class="tab-actions">
+        <button class="btn btn-ghost btn-sm" onclick="copyStory()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+        </button>
       </div>
+    </div>
 
-      <div class="progress-bar-wrap" id="progressWrap">
-        <span class="progress-label" id="progressLabel">Initializing…</span>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-        <span class="progress-label" id="progressPct">0%</span>
-      </div>
+    <!-- Story tab -->
+    <div class="story-content">
 
-      <div class="story-body">
-        <div class="story-text-area" id="storyTextPanel">
+      <div class="tab-panel active" id="panelStory">
+
+        <!-- Progress -->
+        <div class="progress-bar-wrap" id="progressWrap">
+          <div class="progress-text"><span id="progressLabel">Initializing…</span><span id="progressPct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <!-- Chapter prose -->
+        <div id="storyPanel">
           <div class="story-empty">
             <div class="story-empty-icon">📖</div>
-            <div class="story-empty-text">No story generated yet</div>
-            <div class="story-empty-hint">Configure the director settings and characters, then click Generate</div>
+            <div class="story-empty-text">Your story begins here</div>
+            <div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div>
           </div>
         </div>
 
-        <div class="agent-log" id="agentLogPanel" style="display:none">
-          <div class="log-header">Agent Dialogue Stream</div>
-          <div id="logMessages">
-            <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:40px 0">
-              No dialogue yet
+        <!-- Branch choices -->
+        <div class="branch-section" id="branchSection" style="display:none">
+          <div class="branch-label">What happens next?</div>
+          <div class="branch-cards" id="branchCards"></div>
+        </div>
+
+      </div><!-- /panelStory -->
+
+      <!-- Agent log tab -->
+      <div class="tab-panel" id="panelLog">
+        <div class="agent-log-panel">
+          <div class="log-header-row">Agent Dialogue Stream</div>
+          <div class="log-messages" id="logMessages">
+            <div class="log-empty">No dialogue yet — start a story to see agents collaborate.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Story tree tab -->
+      <div class="tab-panel" id="panelTree">
+        <div class="tree-panel">
+          <div class="tree-toolbar">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+            <span>Click any node to restore that chapter · Gold = current path · Gray = unexplored branches</span>
+          </div>
+          <div class="tree-scroll" id="treeScroll">
+            <div class="tree-empty" id="treeEmpty">
+              <span style="font-size:32px;opacity:0.3">🌿</span>
+              <span>Story tree will appear here as you generate chapters</span>
             </div>
+            <svg id="treesvg" style="display:none"></svg>
+          </div>
+        </div>
+        <div class="node-tooltip" id="nodeTooltip"></div>
+      </div>
+
+      <!-- World map tab -->
+      <div class="tab-panel" id="panelMap">
+        <div class="map-panel">
+          <div class="map-preview">
+            <div class="map-icon">🗺</div>
+            <div class="map-coming">World Map</div>
+            <div class="map-sub">Coming in next version · Will visualize locations from your story</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);max-width:360px;text-align:center;line-height:1.7">
+            As you generate chapters, key locations will be automatically extracted and mapped onto a procedurally generated world map.
           </div>
         </div>
       </div>
 
-      <div class="stats-bar">
-        <div class="stat">
-          <span class="stat-value" id="statWords">0</span>
-          <span class="stat-label">Words</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <span class="stat-value" id="statChars">0</span>
-          <span class="stat-label">Characters</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <span class="stat-value" id="statRounds">0</span>
-          <span class="stat-label">Iterations</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <span class="stat-value" id="statTime">—</span>
-          <span class="stat-label">Time</span>
-        </div>
-      </div>
+    </div><!-- /story-content -->
+
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-value" id="statWords">0</span><span class="stat-label">Words</span></div>
+      <div class="stat-div"></div>
+      <div class="stat"><span class="stat-value" id="statChapters">0</span><span class="stat-label">Chapters</span></div>
+      <div class="stat-div"></div>
+      <div class="stat"><span class="stat-value" id="statBranches">0</span><span class="stat-label">Branches</span></div>
+      <div class="stat-div"></div>
+      <div class="stat"><span class="stat-value" id="statTime">—</span><span class="stat-label">Time</span></div>
     </div>
-  </section>
+
+  </div><!-- /right-panel -->
 
 </main>
 
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-/* ── Config ── */
 const API_BASE = 'http://localhost:5001';
 
-/* ══════════════════════════════════════════════
-   Setup / API Config Modal
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   Setup Modal
+══════════════════════════════════════════ */
 const PROVIDER_META = {
-  openai: {
-    models:   [['gpt-4o','GPT-4o  (recommended)'],['gpt-4-turbo','GPT-4 Turbo'],['gpt-3.5-turbo','GPT-3.5 Turbo  (faster)']],
-    hint:     'Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>',
-    base_url: 'https://api.openai.com/v1',
-  },
-  anthropic: {
-    models:   [['claude-3-5-sonnet-20241022','Claude 3.5 Sonnet  (recommended)'],['claude-3-opus-20240229','Claude 3 Opus'],['claude-3-haiku-20240307','Claude 3 Haiku  (faster)']],
-    hint:     'Get your key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>',
-    base_url: 'https://api.anthropic.com/v1',
-  },
-  google: {
-    models:   [['gemini-1.5-pro','Gemini 1.5 Pro  (recommended)'],['gemini-1.5-flash','Gemini 1.5 Flash  (faster)'],['gemini-1.0-pro','Gemini 1.0 Pro']],
-    hint:     'Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>',
-    base_url: 'https://generativelanguage.googleapis.com/v1beta/openai',
-  },
+  openai:    { models:[['gpt-4o','GPT-4o  (recommended)'],['gpt-4-turbo','GPT-4 Turbo'],['gpt-3.5-turbo','GPT-3.5 Turbo']], hint:'Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>', base_url:'https://api.openai.com/v1' },
+  anthropic: { models:[['claude-3-5-sonnet-20241022','Claude 3.5 Sonnet  (recommended)'],['claude-3-opus-20240229','Claude 3 Opus'],['claude-3-haiku-20240307','Claude 3 Haiku']], hint:'Get your key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>', base_url:'https://api.anthropic.com/v1' },
+  google:    { models:[['gemini-1.5-pro','Gemini 1.5 Pro  (recommended)'],['gemini-1.5-flash','Gemini 1.5 Flash'],['gemini-1.0-pro','Gemini 1.0 Pro']], hint:'Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>', base_url:'https://generativelanguage.googleapis.com/v1beta/openai' },
 };
-
 let currentProvider = 'openai';
-let setupConfig = null;  // loaded from localStorage
+let setupConfig = null;
 
-function loadConfig() {
-  try {
-    const raw = localStorage.getItem('storyforge_config');
-    if (raw) setupConfig = JSON.parse(raw);
-  } catch (_) {}
+function loadConfig() { try { const r = localStorage.getItem('storyforge_config'); if (r) setupConfig = JSON.parse(r); } catch(_){} }
+function openSetup() { document.getElementById('setupOverlay').classList.remove('hidden'); if(setupConfig){ selectProvider(setupConfig.provider, document.querySelector(`[data-provider="${setupConfig.provider}"]`)); document.getElementById('setupApiKey').value = setupConfig.api_key||''; document.getElementById('setupModel').value = setupConfig.model||''; } }
+function closeSetup() { document.getElementById('setupOverlay').classList.add('hidden'); }
+function selectProvider(p, el) {
+  currentProvider = p;
+  document.querySelectorAll('.provider-card').forEach(c=>c.classList.remove('selected'));
+  if(el) el.classList.add('selected');
+  const m = PROVIDER_META[p];
+  document.getElementById('setupModel').innerHTML = m.models.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  document.getElementById('setupHintText').innerHTML = m.hint;
 }
-
-function openSetup() {
-  document.getElementById('setupOverlay').classList.remove('hidden');
-  if (setupConfig) {
-    selectProvider(setupConfig.provider, document.querySelector(`[data-provider="${setupConfig.provider}"]`));
-    document.getElementById('setupApiKey').value = setupConfig.api_key || '';
-    document.getElementById('setupModel').value = setupConfig.model || '';
-  }
-}
-
-function closeSetup() {
-  document.getElementById('setupOverlay').classList.add('hidden');
-}
-
-function selectProvider(provider, el) {
-  currentProvider = provider;
-  document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
-  if (el) el.classList.add('selected');
-
-  const meta = PROVIDER_META[provider];
-  // Update model options
-  const sel = document.getElementById('setupModel');
-  sel.innerHTML = meta.models.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-  // Update hint
-  document.getElementById('setupHintText').innerHTML = meta.hint;
-}
-
-function toggleKeyVisibility() {
-  const inp = document.getElementById('setupApiKey');
-  const icon = document.getElementById('eyeIcon');
-  if (inp.type === 'password') {
-    inp.type = 'text';
-    icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
-  } else {
-    inp.type = 'password';
-    icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
-  }
-}
-
+function toggleKeyVisibility() { const i=document.getElementById('setupApiKey'); const ic=document.getElementById('eyeIcon'); if(i.type==='password'){i.type='text';ic.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';}else{i.type='password';ic.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';} }
 async function saveSetup() {
-  const apiKey = document.getElementById('setupApiKey').value.trim();
-  const model  = document.getElementById('setupModel').value;
-  if (!apiKey) { showToast('Please enter your API key', 'error'); document.getElementById('setupApiKey').focus(); return; }
-
-  const btn = document.getElementById('setupSaveBtn');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Connecting…`;
-
-  const meta = PROVIDER_META[currentProvider];
-  const cfg = { provider: currentProvider, api_key: apiKey, model, base_url: meta.base_url };
-
-  // POST to backend
-  try {
-    const res = await fetch(`${API_BASE}/api/config/llm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cfg),
-    });
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      throw new Error(e.error || `Server error ${res.status}`);
-    }
-    showToast('API configured successfully!', 'success');
-  } catch (err) {
-    // Backend might not be running; save locally anyway and warn
-    showToast(`Saved locally (backend offline: ${err.message})`, 'info');
-  }
-
-  // Always persist to localStorage
-  localStorage.setItem('storyforge_config', JSON.stringify(cfg));
-  setupConfig = cfg;
+  const apiKey=document.getElementById('setupApiKey').value.trim();
+  const model=document.getElementById('setupModel').value;
+  if(!apiKey){showToast('Please enter your API key','error');return;}
+  const btn=document.getElementById('setupSaveBtn'); btn.disabled=true;
+  btn.innerHTML='<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Connecting…';
+  const meta=PROVIDER_META[currentProvider];
+  const cfg={provider:currentProvider,api_key:apiKey,model,base_url:meta.base_url};
+  try { const r=await fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||`${r.status}`); showToast('API configured!','success'); } catch(e){showToast(`Saved locally (backend: ${e.message})`,'info');}
+  localStorage.setItem('storyforge_config',JSON.stringify(cfg)); setupConfig=cfg;
   updateProviderStatus();
-
-  // Update the control bar model selector to match
-  syncModelToControlBar(cfg.provider, cfg.model);
-
-  btn.disabled = false;
-  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Start Creating`;
+  btn.disabled=false; btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Start Creating';
   closeSetup();
 }
+function updateProviderStatus() { if(!setupConfig) return; document.getElementById('providerStatus').style.display=''; document.getElementById('providerStatusText').textContent=setupConfig.model||setupConfig.provider; }
+function initSetup() { loadConfig(); if(!setupConfig||!setupConfig.api_key){document.getElementById('setupOverlay').classList.remove('hidden');}else{updateProviderStatus();fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(setupConfig)}).catch(()=>{});} }
 
-function updateProviderStatus() {
-  if (!setupConfig) return;
-  const statusEl = document.getElementById('providerStatus');
-  const textEl   = document.getElementById('providerStatusText');
-  statusEl.style.display = '';
-  textEl.textContent = setupConfig.model || setupConfig.provider;
-}
-
-function syncModelToControlBar(provider, model) {
-  const sel = document.getElementById('modelSelect');
-  // Try to find matching option; otherwise inject one
-  for (const opt of sel.options) {
-    if (opt.value.toLowerCase().includes(model.toLowerCase()) ||
-        model.toLowerCase().includes(opt.value.toLowerCase())) {
-      sel.value = opt.value; return;
-    }
-  }
-  const opt = document.createElement('option');
-  opt.value = model; opt.textContent = model;
-  sel.appendChild(opt); sel.value = model;
-}
-
-function initSetup() {
-  loadConfig();
-  if (!setupConfig || !setupConfig.api_key) {
-    // First visit — show modal
-    document.getElementById('setupOverlay').classList.remove('hidden');
-  } else {
-    updateProviderStatus();
-    // Re-apply saved config to backend on page load
-    fetch(`${API_BASE}/api/config/llm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(setupConfig),
-    }).catch(() => {});
-  }
-}
-
-/* ── State ── */
-const COLORS = ['blue', 'purple', 'teal', 'rose'];
-const EMOJIS = ['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿'];
-
-let characters = [
-  { id: 1, name: 'Elena', role: 'Protagonist · Apprentice Mage',  desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue'   },
-  { id: 2, name: 'Karl',  role: 'Supporting · Ranger Captain',    desc: 'A man of few words whose blade conceals fierce loyalty',    emoji: '🗡️', color: 'purple' },
-  { id: 3, name: 'Lysa',  role: 'Supporting · Mystic Oracle',     desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal'   },
+/* ══════════════════════════════════════════
+   Characters
+══════════════════════════════════════════ */
+const COLORS=['blue','purple','teal','rose'];
+const EMOJIS=['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿'];
+let characters=[
+  {id:1,name:'Elena', role:'Protagonist · Mage',      desc:'Curious and gentle, hiding great power',  emoji:'🧙',color:'blue'},
+  {id:2,name:'Karl',  role:'Supporting · Ranger',      desc:'Few words, fierce loyalty beneath the blade',emoji:'🗡️',color:'purple'},
+  {id:3,name:'Lysa',  role:'Supporting · Oracle',      desc:'Sees fate but chooses to believe in change',emoji:'🔮',color:'teal'},
 ];
-let nextId = 4;
-let currentTab = 'story';
-let isGenerating = false;
-let currentSessionId = null;
-let renderedChapters = [];   // accumulate chapter HTML
+let nextId=4;
 
-/* ── Character grid ── */
 function renderCharacters() {
-  const grid = document.getElementById('characterGrid');
-  grid.innerHTML = '';
-  characters.forEach(c => {
-    const card = document.createElement('div');
-    card.className = 'char-card';
-    card.dataset.id = c.id;
-    card.dataset.color = c.color;
-    card.innerHTML = `
-      <div class="char-card-header">
-        <div class="char-avatar">${c.emoji}</div>
-        <div style="flex:1;min-width:0">
-          <input class="char-name-input" value="${c.name}" placeholder="Character name"
-            oninput="updateChar(${c.id},'name',this.value)" />
-          <input class="char-role-input" value="${c.role}" placeholder="Role"
-            oninput="updateChar(${c.id},'role',this.value)" />
-        </div>
+  const g=document.getElementById('characterGrid'); g.innerHTML='';
+  characters.forEach(c=>{
+    const d=document.createElement('div'); d.className='char-card'; d.dataset.color=c.color;
+    d.innerHTML=`<div class="char-header"><div class="char-emoji">${c.emoji}</div><div style="flex:1;min-width:0"><input class="char-name-input" value="${c.name}" placeholder="Name" oninput="updateChar(${c.id},'name',this.value)"/><input class="char-role-input" value="${c.role}" placeholder="Role" oninput="updateChar(${c.id},'role',this.value)"/></div></div><textarea class="char-desc-input" placeholder="Personality, background…" oninput="updateChar(${c.id},'desc',this.value)">${c.desc}</textarea><div class="char-footer"><div class="char-status"><div class="status-dot"></div>Standby</div><button class="btn-remove" onclick="removeChar(${c.id})">×</button></div>`;
+    g.appendChild(d);
+  });
+  const add=document.createElement('div'); add.className='add-char-card'; add.onclick=addChar;
+  add.innerHTML='<div class="add-char-icon">＋</div><span class="add-char-label">Add Character</span>'; g.appendChild(add);
+  document.getElementById('statBranches').textContent=Object.values(storyTree.nodes).filter(n=>n.parentId&&storyTree.nodes[n.parentId]?.children?.length>1).length;
+}
+function updateChar(id,f,v){const c=characters.find(c=>c.id===id);if(c)c[f]=v;}
+function addChar(){const color=COLORS[characters.length%COLORS.length];const emoji=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];characters.push({id:nextId++,name:`Character ${nextId-1}`,role:'Undefined',desc:'',emoji,color});renderCharacters();showToast('Character added','success');}
+function removeChar(id){if(characters.length<=1){showToast('At least one character required','error');return;}characters=characters.filter(c=>c.id!==id);renderCharacters();showToast('Character removed','info');}
+
+/* ══════════════════════════════════════════
+   Style chips + controls
+══════════════════════════════════════════ */
+function toggleChip(el){el.classList.toggle('active');}
+function updateTemp(el){document.getElementById('tempVal').textContent=(el.value/100).toFixed(2);}
+
+/* ══════════════════════════════════════════
+   AI Suggest (title / theme)
+══════════════════════════════════════════ */
+async function suggestField(type) {
+  const btnId = type==='title'?'titleAiBtn':'themeAiBtn';
+  const dropId = type==='title'?'titleDropdown':'themeDropdown';
+  const btn = document.getElementById(btnId);
+  const drop = document.getElementById(dropId);
+  btn.classList.add('loading'); btn.textContent='…';
+  drop.innerHTML=''; drop.classList.remove('open');
+  const ctx = `Theme: ${document.getElementById('storyTheme').value||'unknown'}. Style: ${[...document.querySelectorAll('.chip.active')].map(c=>c.textContent).join(', ')}`;
+  try {
+    const r = await fetch(`${API_BASE}/api/story/suggest`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,context:ctx})});
+    const d = await r.json();
+    const items = d.suggestions||[];
+    drop.innerHTML = items.map(s=>`<div class="suggest-item" onclick="applySuggest('${type}','${s.replace(/'/g,"\'")}')">${s}</div>`).join('');
+    drop.classList.add('open');
+  } catch(e){ showToast('Suggest failed: '+e.message,'error'); }
+  btn.classList.remove('loading'); btn.textContent='✦ AI';
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',function h(e){if(!drop.contains(e.target)){drop.classList.remove('open');document.removeEventListener('click',h);}},true),100);
+}
+function applySuggest(type, val) {
+  document.getElementById(type==='title'?'storyTitle':'storyTheme').value = val;
+  document.getElementById(type==='title'?'titleDropdown':'themeDropdown').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════
+   Keyword Picker
+══════════════════════════════════════════ */
+const KW_DEFAULTS = {
+  'Environment': ['Dense Forest','Coastal City','Desert Ruins','Floating Islands','Underground Labyrinth','Frozen Tundra','Volcanic Wasteland','Sky Kingdom','Sunken Ruins','Enchanted Meadow'],
+  'Atmosphere':  ['Mystical','Dark & Gritty','Whimsical','Melancholic','Tense','Hopeful','Surreal','Cozy','Ominous','Dreamlike'],
+  'Era / Tech':  ['Ancient','Medieval','Industrial','Modern','Post-Apocalyptic','Far Future','Timeless','Renaissance','Victorian','Cyberpunk'],
+  'Special':     ['Magic System','Advanced AI','Gods & Myths','Hidden Societies','Prophecies','Memory Loss','Time Loops','Parallel Worlds','Soulbond','Ancient Curse'],
+};
+let selectedKeywords = new Set();
+
+function buildKeywordPicker(categories) {
+  const cats = categories || Object.entries(KW_DEFAULTS).map(([name,words])=>({name,words}));
+  const picker = document.getElementById('keywordPicker');
+  picker.innerHTML = cats.map(cat=>`
+    <div class="kp-category">
+      <div class="kp-cat-label">${cat.name}</div>
+      <div class="kp-chips">${cat.words.map(w=>`<span class="kp-chip${selectedKeywords.has(w)?' active':''}" onclick="toggleKw(this,'${w.replace(/'/g,"\\'")}'')">${w}</span>`).join('')}</div>
+    </div>`).join('') +
+    `<div class="kp-footer">
+      <span class="kp-count" id="kwCount">${selectedKeywords.size} selected</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-xs" id="kwAiBtn" onclick="aiKeywords()">✦ AI Generate</button>
+        <button class="btn btn-primary btn-xs" onclick="applyKeywords()">Apply</button>
       </div>
-      <textarea class="char-desc-input" placeholder="Personality, background, traits…"
-        oninput="updateChar(${c.id},'desc',this.value)">${c.desc}</textarea>
-      <div class="char-card-footer">
-        <div class="char-status"><div class="status-dot"></div> Standby</div>
-        <button class="btn-remove" onclick="removeCharacter(${c.id})" title="Remove">×</button>
-      </div>`;
-    grid.appendChild(card);
+    </div>`;
+}
+
+function toggleKeywordPicker() {
+  const p = document.getElementById('keywordPicker');
+  if (p.classList.contains('open')) { p.classList.remove('open'); return; }
+  buildKeywordPicker(null);
+  p.classList.add('open');
+  setTimeout(()=>document.addEventListener('click',function h(e){const p2=document.getElementById('keywordPicker');const btn=document.getElementById('kwBtn');if(!p2.contains(e.target)&&e.target!==btn){p2.classList.remove('open');document.removeEventListener('click',h);}},true),100);
+}
+
+function toggleKw(el, word) {
+  if (selectedKeywords.has(word)) { selectedKeywords.delete(word); el.classList.remove('active'); }
+  else { selectedKeywords.add(word); el.classList.add('active'); }
+  const cnt = document.getElementById('kwCount');
+  if(cnt) cnt.textContent = selectedKeywords.size+' selected';
+}
+
+async function aiKeywords() {
+  const btn = document.getElementById('kwAiBtn');
+  btn.textContent = '…'; btn.disabled = true;
+  const ctx = document.getElementById('storyTheme').value || document.getElementById('storyTitle').value || 'adventure';
+  try {
+    const r = await fetch(`${API_BASE}/api/story/suggest`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'keywords',context:ctx})});
+    const d = await r.json();
+    if (d.categories) buildKeywordPicker(d.categories);
+  } catch(e){ showToast('AI keywords failed','error'); }
+  btn.textContent = '✦ AI Generate'; btn.disabled = false;
+}
+
+function applyKeywords() {
+  if (!selectedKeywords.size) { showToast('Select at least one keyword','info'); return; }
+  const ta = document.getElementById('storySetting');
+  const kws = [...selectedKeywords].join(', ');
+  ta.value = ta.value.trim() ? ta.value.trim()+'\n\nKey elements: '+kws+'.' : 'A world featuring: '+kws+'.';
+  document.getElementById('keywordPicker').classList.remove('open');
+  selectedKeywords.clear();
+  showToast('Keywords applied to World Setting','success');
+}
+
+/* ══════════════════════════════════════════
+   Tab switching
+══════════════════════════════════════════ */
+function switchMainTab(name) {
+  ['story','tree','log','map'].forEach(n=>{
+    document.getElementById('tab'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
+    document.getElementById('panel'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
+  });
+  if(name==='tree') renderTreeSVG();
+}
+
+/* ══════════════════════════════════════════
+   Story Tree State
+══════════════════════════════════════════ */
+const storyTree = { nodes: {}, rootId: null, currentId: null };
+let nodeCounter = 0;
+
+function createNode(parentId, chapterNum, title, prose, choiceText, sessionId) {
+  const id = 'n'+(++nodeCounter);
+  const node = { id, parentId, chapterNum, title, prose, choiceText, children:[], sessionId };
+  storyTree.nodes[id] = node;
+  if (parentId && storyTree.nodes[parentId]) storyTree.nodes[parentId].children.push(id);
+  if (!storyTree.rootId) storyTree.rootId = id;
+  storyTree.currentId = id;
+  return node;
+}
+
+function getCurrentPath() {
+  const path=[]; let id=storyTree.currentId;
+  while(id){path.unshift(id);id=storyTree.nodes[id]?.parentId;}
+  return path;
+}
+
+function restoreToNode(nodeId) {
+  const node = storyTree.nodes[nodeId]; if(!node) return;
+  storyTree.currentId = nodeId;
+  currentSessionId = node.sessionId;
+  // Rebuild story panel with path prose
+  const path = getCurrentPath();
+  const storyPanel = document.getElementById('storyPanel');
+  storyPanel.innerHTML = path.map(nid=>{
+    const n = storyTree.nodes[nid];
+    return `<div class="chapter-block">
+      <div class="chapter-header">
+        <span class="chapter-num">Chapter ${n.chapterNum}</span>
+        <span class="chapter-title">${n.title}</span>
+      </div>
+      <div class="chapter-prose">${proseToHtml(n.prose)}</div>
+    </div>`;
+  }).join('');
+  // Show choices if this node has unexplored children suggestions (or allow regenerating)
+  document.getElementById('branchSection').style.display='none';
+  switchMainTab('story');
+  renderTreeSVG();
+  showToast(`Restored to Chapter ${node.chapterNum}: ${node.title}`,'info');
+  // Update stats
+  updateStats();
+}
+
+/* ══════════════════════════════════════════
+   Story Tree SVG Renderer
+══════════════════════════════════════════ */
+const COL_W = 150, ROW_H = 80, PAD_X = 50, PAD_Y = 60;
+
+function layoutNodes() {
+  const nodes = Object.values(storyTree.nodes);
+  // Group by chapter depth
+  const levels = {};
+  nodes.forEach(n=>{ levels[n.chapterNum]=(levels[n.chapterNum]||[]); levels[n.chapterNum].push(n); });
+  Object.entries(levels).forEach(([depth,lvl])=>{
+    lvl.forEach((n,i)=>{ n._x=parseInt(depth)*COL_W+PAD_X; n._y=i*ROW_H-(lvl.length-1)*ROW_H/2+PAD_Y+60; });
+  });
+  return nodes;
+}
+
+function renderTreeSVG() {
+  const nodes = layoutNodes();
+  if(!nodes.length){document.getElementById('treeEmpty').style.display='flex';document.getElementById('treesvg').style.display='none';return;}
+  document.getElementById('treeEmpty').style.display='none';
+  document.getElementById('treesvg').style.display='block';
+
+  const path = getCurrentPath();
+  const maxX = Math.max(...nodes.map(n=>n._x))+PAD_X+60;
+  const minY = Math.min(...nodes.map(n=>n._y))-40;
+  const maxY = Math.max(...nodes.map(n=>n._y))+60;
+  const svgH = Math.max(240, maxY-minY);
+  const svgW = Math.max(400, maxX);
+  const offsetY = -minY+20;
+
+  let edges='', nodesSVG='';
+  nodes.forEach(n=>{
+    if(n.parentId&&storyTree.nodes[n.parentId]){
+      const p=storyTree.nodes[n.parentId];
+      const inPath=path.includes(n.id)&&path.includes(n.parentId);
+      const col=inPath?'#e8c56d':'#1e2235';
+      const w=inPath?2.5:1.5;
+      // Curved bezier
+      const x1=p._x,y1=p._y+offsetY,x2=n._x,y2=n._y+offsetY;
+      const cx=(x1+x2)/2;
+      edges+=`<path d="M${x1} ${y1} C${cx} ${y1} ${cx} ${y2} ${x2} ${y2}" fill="none" stroke="${col}" stroke-width="${w}" stroke-dasharray="${inPath?'':'5,4'}"/>`;
+    }
+    const inPath=path.includes(n.id);
+    const isCurrent=n.id===storyTree.currentId;
+    const cx=n._x, cy=n._y+offsetY;
+    const r=isCurrent?22:16;
+    const fill=isCurrent?'#e8c56d':inPath?'#1e3060':'#0f1120';
+    const stroke=isCurrent?'#e8c56d':inPath?'#5b8dee':'#1e2235';
+    const sw=isCurrent?3:inPath?2:1.5;
+    const textColor=isCurrent?'#080a12':inPath?'#e8eaf0':'#4a5068';
+    const shortTitle=n.title.length>12?n.title.slice(0,12)+'…':n.title;
+    nodesSVG+=`
+      <g class="tree-node-group" onclick="restoreToNode('${n.id}')"
+         onmouseenter="showNodeTip(event,'${n.id}')" onmouseleave="hideNodeTip()">
+        <circle class="node-circle" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+        <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="9" font-weight="700" fill="${textColor}">Ch.${n.chapterNum}</text>
+        <text x="${cx}" y="${cy+7}" text-anchor="middle" font-size="8" fill="${inPath?'#8a91a8':'#2e3450'}">${shortTitle}</text>
+        ${isCurrent?`<circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="#e8c56d" stroke-width="1" opacity="0.3"><animate attributeName="r" values="${r+4};${r+8};${r+4}" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/></circle>`:''}
+      </g>`;
+    // choice text label below the node if not root
+    if(n.choiceText){
+      const label=n.choiceText.length>18?n.choiceText.slice(0,18)+'…':n.choiceText;
+      nodesSVG+=`<text x="${cx}" y="${cy+r+13}" text-anchor="middle" font-size="7.5" fill="#2e3450">${label}</text>`;
+    }
   });
 
-  const addCard = document.createElement('div');
-  addCard.className = 'add-char-card';
-  addCard.onclick = addCharacter;
-  addCard.innerHTML = `<div class="add-char-icon">＋</div><span class="add-char-label">Add New Character</span>`;
-  grid.appendChild(addCard);
-
-  document.getElementById('statChars').textContent = characters.length;
+  document.getElementById('treesvg').innerHTML=`
+    <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" style="font-family:inherit">
+      <defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <g id="edges">${edges}</g>
+      <g id="nodes">${nodesSVG}</g>
+    </svg>`;
+  document.getElementById('treesvg').style.width=svgW+'px';
+  document.getElementById('treesvg').style.height=svgH+'px';
 }
 
-function updateChar(id, field, value) {
-  const c = characters.find(c => c.id === id);
-  if (c) c[field] = value;
+function showNodeTip(e, nodeId) {
+  const n=storyTree.nodes[nodeId]; if(!n) return;
+  const tip=document.getElementById('nodeTooltip');
+  tip.innerHTML=`<b>Chapter ${n.chapterNum}: ${n.title}</b><br><span style="color:var(--text-muted);font-size:10px">${n.choiceText||'Story start'}</span>`;
+  tip.style.display='block';
+  tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-10)+'px';
 }
-function addCharacter() {
-  const color = COLORS[characters.length % COLORS.length];
-  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-  characters.push({ id: nextId++, name: `Character ${nextId - 1}`, role: 'Undefined Role', desc: '', emoji, color });
-  renderCharacters();
-  showToast('New character added', 'success');
-}
-function removeCharacter(id) {
-  if (characters.length <= 1) { showToast('At least one character is required', 'error'); return; }
-  characters = characters.filter(c => c.id !== id);
-  renderCharacters();
-  showToast('Character removed', 'info');
-}
-function resetCharacters() {
-  characters = [
-    { id: 1, name: 'Elena', role: 'Protagonist · Apprentice Mage',  desc: 'Endlessly curious, gentle at heart but hiding great power', emoji: '🧙', color: 'blue'   },
-    { id: 2, name: 'Karl',  role: 'Supporting · Ranger Captain',    desc: 'A man of few words whose blade conceals fierce loyalty',    emoji: '🗡️', color: 'purple' },
-    { id: 3, name: 'Lysa',  role: 'Supporting · Mystic Oracle',     desc: 'She sees destiny yet chooses to believe in change',         emoji: '🔮', color: 'teal'   },
-  ];
-  nextId = 4;
-  renderCharacters();
-  showToast('Characters reset', 'info');
-}
+function hideNodeTip(){document.getElementById('nodeTooltip').style.display='none';}
 
-function toggleChip(el) { el.classList.toggle('active'); }
-function updateTemp(el) { document.getElementById('tempVal').textContent = (el.value / 100).toFixed(2); }
-function switchTab(btn, tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('storyTextPanel').style.display = tab === 'story' ? '' : 'none';
-  document.getElementById('agentLogPanel').style.display  = tab === 'log'   ? '' : 'none';
-}
-
-/* ── SSE helper (POST + stream) ── */
+/* ══════════════════════════════════════════
+   SSE helper
+══════════════════════════════════════════ */
 async function* readSSE(response) {
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop();
-    for (const part of parts) {
-      if (!part.trim()) continue;
-      let eventType = 'message', data = '';
-      for (const line of part.split('\n')) {
-        if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-        if (line.startsWith('data: '))  data      = line.slice(6).trim();
-      }
-      if (data) { try { yield { eventType, data: JSON.parse(data) }; } catch (_) {} }
+  const reader=response.body.getReader(); const decoder=new TextDecoder(); let buf='';
+  while(true){
+    const{done,value}=await reader.read(); if(done) break;
+    buf+=decoder.decode(value,{stream:true});
+    const parts=buf.split('\n\n'); buf=parts.pop();
+    for(const part of parts){
+      if(!part.trim()) continue;
+      let ev='message',data='';
+      for(const line of part.split('\n')){if(line.startsWith('event: '))ev=line.slice(7).trim();if(line.startsWith('data: '))data=line.slice(6).trim();}
+      if(data){try{yield{eventType:ev,data:JSON.parse(data)};}catch(_){}}
     }
   }
 }
 
-/* ── Prose renderer ── */
+/* ══════════════════════════════════════════
+   Core state
+══════════════════════════════════════════ */
+let currentSessionId = null;
+let isGenerating = false;
+let storyStartTime = null;
+let chapterCount = 0;
+let totalWords = 0;
+
 function proseToHtml(prose) {
-  return prose.split(/\n\n+/).map(p => p.trim()).filter(Boolean)
-    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  return '<p>'+prose.split(/\n\n+/).map(p=>p.trim()).filter(Boolean).join('</p><p>')+'</p>';
 }
 
-function renderStoryPanel() {
-  const panel = document.getElementById('storyTextPanel');
-  if (!renderedChapters.length) return;
-  panel.innerHTML = renderedChapters.join('');
-}
+/* ══════════════════════════════════════════
+   Start Story (Chapter 1)
+══════════════════════════════════════════ */
+async function startStory() {
+  if(isGenerating) return;
+  const theme=document.getElementById('storyTheme').value.trim()||document.getElementById('storyTitle').value.trim();
+  if(!theme){showToast('Please enter a Story Theme or Title first','error');document.getElementById('storyTheme').focus();return;}
 
-/* ── Main generate flow ── */
-async function generateStory() {
-  if (isGenerating) return;
-  const theme = document.getElementById('storyTheme').value.trim();
-  if (!theme) { showToast('Please enter a story theme first', 'error'); document.getElementById('storyTheme').focus(); return; }
+  isGenerating=true; storyStartTime=Date.now(); chapterCount=0; totalWords=0;
+  storyTree.nodes={}; storyTree.rootId=null; storyTree.currentId=null; nodeCounter=0;
 
-  isGenerating = true;
-  renderedChapters = [];
-  currentSessionId = null;
+  const btn=document.getElementById('generateBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Initializing…';
 
-  const btn = document.querySelector('.btn-generate');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Generating…`;
-
-  const logTab = document.querySelectorAll('.tab')[1];
-  switchTab(logTab, 'log');
-  document.getElementById('logMessages').innerHTML = '';
+  document.getElementById('storyPanel').innerHTML='';
+  document.getElementById('branchSection').style.display='none';
+  document.getElementById('logMessages').innerHTML='';
   document.getElementById('progressWrap').classList.add('visible');
-  setProgress(0, 'Initializing agents…');
-  document.getElementById('storyTitleDisplay').textContent = theme.length > 24 ? theme.slice(0, 24) + '…' : theme;
+  setProgress(0,'Building story world…');
+  switchMainTab('story');
 
-  const startTime = Date.now();
+  const chapterLengthHint={'brief':'Keep each chapter very short, around 300 words.','medium':'Keep each chapter around 700 words.','detailed':'Write rich, detailed chapters around 1500 words.'}[document.getElementById('chapterLength').value];
+  const tags=[...document.querySelectorAll('.chip.active')].map(c=>c.textContent.trim());
+  const charPayload=characters.map(c=>({id:c.color,name:c.name,personality:c.desc||'A mysterious character.',background:'',role:c.role,color:c.color}));
+  const customSetting=document.getElementById('storySetting').value.trim();
+  const notes=document.getElementById('directorNote').value.trim();
 
   try {
-    /* ── Step 1: /api/story/start ── */
-    const tags        = [...document.querySelectorAll('.chip.active')].map(c => c.textContent.trim());
-    const customSetting = document.getElementById('storySetting').value.trim();
-    const directorNote  = document.getElementById('directorNote').value.trim();
-    const numChapters   = parseInt(document.getElementById('iterRounds').value) || 2;
-
-    // Map UI characters → backend schema (use color as id so cls matches CSS)
-    const charPayload = characters.map(c => ({
-      id:          c.color,
-      name:        c.name,
-      personality: c.desc || 'A mysterious character with hidden depths.',
-      background:  '',
-      role:        c.role,
-      color:       c.color,
-    }));
-
-    setProgress(5, 'Building story world…');
-    const startRes = await fetch(`${API_BASE}/api/story/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        theme,
-        tags,
-        characters: charPayload,
-        custom_setting: customSetting + (directorNote ? '\n\nDirector notes: ' + directorNote : ''),
-        num_chapters: numChapters,
-      }),
-    });
-
-    if (!startRes.ok) {
-      const err = await startRes.json().catch(() => ({}));
-      throw new Error(err.error || `Server error ${startRes.status}`);
-    }
-
-    const startData = await startRes.json();
-    currentSessionId = startData.session_id;
-    document.getElementById('statRounds').textContent = startData.chapter_plans?.length ?? numChapters;
-
-    const worldDesc = startData.world?.description || startData.world?.setting?.atmosphere || 'World initialized';
-    addLogMessage({ sender: '🌍 World Builder', cls: 'director', text: worldDesc });
-    setProgress(10, 'World ready — starting chapter pipeline…');
-
-    /* ── Step 2: generate each chapter via SSE ── */
-    const totalChapters = startData.chapter_plans?.length ?? numChapters;
-    for (let i = 0; i < totalChapters; i++) {
-      const plan = startData.chapter_plans?.[i];
-      const chapterTitle = plan?.title || `Chapter ${i + 1}`;
-
-      addLogMessage({ sender: `📖 Chapter ${i + 1}`, cls: 'composer', text: `Starting: "${chapterTitle}"` });
-      setCharStatus('active');
-
-      const baseProgress = 10 + Math.round((i / totalChapters) * 85);
-      setProgress(baseProgress, `Chapter ${i + 1} / ${totalChapters}: ${chapterTitle}…`);
-
-      const chRes = await fetch(`${API_BASE}/api/story/generate-chapter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ session_id: currentSessionId }),
-      });
-
-      if (!chRes.ok) {
-        const err = await chRes.json().catch(() => ({}));
-        throw new Error(err.error || `Chapter generation failed (${chRes.status})`);
-      }
-
-      for await (const { eventType, data } of readSSE(chRes)) {
-        if (eventType === 'progress') {
-          const chapterOffset = 10 + Math.round((i / totalChapters) * 85);
-          const chapterShare  = Math.round((1 / totalChapters) * 85);
-          setProgress(
-            Math.min(95, chapterOffset + Math.round((data.progress / 100) * chapterShare)),
-            data.message
-          );
-        } else if (eventType === 'log') {
-          addLogMessage({ sender: data.sender, cls: data.cls, text: data.text });
-        } else if (eventType === 'chapter') {
-          const ch = data.chapter;
-          const safetyScore = data.safety?.safety_score ?? ch.safety_score ?? 1;
-          renderedChapters.push(`
-            <div style="margin-bottom:32px">
-              <p style="color:var(--accent-gold);font-weight:700;font-size:16px;margin-bottom:6px">
-                Chapter ${ch.chapter_number}: ${ch.title}
-              </p>
-              <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
-              ${proseToHtml(ch.prose)}
-              ${safetyScore < 0.8 ? `<p style="font-size:11px;color:var(--accent-rose);margin-top:12px">⚠ Safety score: ${(safetyScore * 100).toFixed(0)}%</p>` : ''}
-            </div>`);
-          renderStoryPanel();
-          // word count
-          const allText = renderedChapters.map(h => h.replace(/<[^>]+>/g, ' ')).join(' ');
-          document.getElementById('statWords').textContent = allText.trim().split(/\s+/).filter(Boolean).length;
-        }
-      }
-    }
-
-    /* ── Done ── */
-    setProgress(100, 'Done!');
-    const storyTab = document.querySelectorAll('.tab')[0];
-    switchTab(storyTab, 'story');
-
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    document.getElementById('statTime').textContent = elapsed + 's';
-
-    await delay(500);
+    setProgress(5,'Starting session…');
+    const res=await fetch(`${API_BASE}/api/story/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme,tags,characters:charPayload,custom_setting:customSetting+(notes?'\nDirector notes: '+notes:''),num_chapters:1,user_hint:chapterLengthHint})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`${res.status}`);}
+    const sd=await res.json();
+    currentSessionId=sd.session_id;
+    addLogMsg({sender:'🌍 World Builder',cls:'director',text:sd.world?.description||sd.world?.setting?.atmosphere||'World initialized'});
+    setProgress(10,'Generating Chapter 1…');
+    await generateNextChapter(null, null);
+  } catch(e){
+    showToast('Error: '+e.message,'error');
+    addLogMsg({sender:'⚠ System',cls:'safety',text:e.message});
     document.getElementById('progressWrap').classList.remove('visible');
+    isGenerating=false; resetGenerateBtn();
+  }
+}
+
+/* ══════════════════════════════════════════
+   Generate Next Chapter
+══════════════════════════════════════════ */
+async function generateNextChapter(choiceTitle, choiceDesc) {
+  if(!currentSessionId) return;
+  isGenerating=true;
+  document.getElementById('branchSection').style.display='none';
+  document.getElementById('progressWrap').classList.add('visible');
+  const userInput=choiceDesc||'';
+
+  // If it's not the first chapter, we need a new session seeded from the current story
+  // For subsequent chapters on an existing session, use the same session
+  setProgress(15,'Director planning…');
+
+  try {
+    const chRes=await fetch(`${API_BASE}/api/story/generate-chapter`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({session_id:currentSessionId,user_input:userInput})});
+    if(!chRes.ok){const e=await chRes.json().catch(()=>({}));throw new Error(e.error||`${chRes.status}`);}
+
+    let chapterData=null;
+    for await(const{eventType,data} of readSSE(chRes)){
+      if(eventType==='progress'){
+        setProgress(15+Math.round(data.progress*0.7),data.message);
+      } else if(eventType==='log'){
+        addLogMsg({sender:data.sender,cls:data.cls,text:data.text});
+      } else if(eventType==='chapter'){
+        chapterData=data;
+      }
+    }
+
+    if(chapterData){
+      const ch=chapterData.chapter;
+      chapterCount++;
+      // Add node to tree
+      const node=createNode(storyTree.currentId||null, chapterCount, ch.title, ch.prose, choiceTitle||null, currentSessionId);
+      // Append chapter to story panel
+      appendChapterBlock(ch.chapter_number, ch.title, ch.prose);
+      totalWords+=ch.prose.split(/\s+/).filter(Boolean).length;
+      updateStats();
+      renderTreeSVG();
+      setProgress(85,'Generating choices…');
+      // Generate branch choices
+      await generateBranchChoices();
+    }
+
+    setProgress(100,'Done!');
+    setTimeout(()=>document.getElementById('progressWrap').classList.remove('visible'),600);
     setCharStatus('done');
-    showToast('Story generated successfully!', 'success');
+    if(chapterCount===1) showToast('Chapter 1 ready — choose your path!','success');
 
-  } catch (err) {
-    console.error(err);
+  } catch(e){
+    showToast('Error: '+e.message,'error');
+    addLogMsg({sender:'⚠ System',cls:'safety',text:e.message});
     document.getElementById('progressWrap').classList.remove('visible');
-    showToast(`Error: ${err.message}`, 'error');
-    addLogMessage({ sender: '⚠ System', cls: 'safety', text: err.message });
   }
-
-  isGenerating = false;
-  btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Regenerate`;
+  isGenerating=false;
+  const btn=document.getElementById('generateBtn');
+  btn.disabled=false;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Regenerate';
 }
 
-/* ── Helpers ── */
+/* ══════════════════════════════════════════
+   Branch Choices
+══════════════════════════════════════════ */
+async function generateBranchChoices() {
+  const bc=document.getElementById('branchCards');
+  bc.innerHTML='<div class="branch-loading"><div class="typing-indicator"><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div><div class="typing-dot" style="background:var(--text-muted)"></div></div> Agents are debating what should happen next…</div>';
+  document.getElementById('branchSection').style.display='block';
+
+  try {
+    const r=await fetch(`${API_BASE}/api/story/generate-choices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSessionId,num_choices:3})});
+    if(!r.ok) throw new Error(`${r.status}`);
+    const d=await r.json();
+    renderBranchChoices(d.choices||[]);
+  } catch(e){
+    bc.innerHTML=`<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Could not generate choices (${e.message}). <button class="btn btn-ghost btn-xs" onclick="generateBranchChoices()">Retry</button></div>`;
+  }
+}
+
+function renderBranchChoices(choices) {
+  const LETTERS=['A','B','C','D'];
+  const bc=document.getElementById('branchCards');
+  bc.innerHTML=choices.map((c,i)=>`
+    <div class="branch-card" id="branch${i}" onclick="selectBranch(${i},'${escStr(c.title)}','${escStr(c.description)}')">
+      <div class="branch-letter">${LETTERS[i]}</div>
+      <div class="branch-body">
+        <div class="branch-title">${c.title}</div>
+        <div class="branch-desc">${c.description}</div>
+      </div>
+    </div>`).join('');
+}
+
+function escStr(s){return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');}
+
+async function selectBranch(idx, title, desc) {
+  if(isGenerating) return;
+  // Dim others, highlight selected
+  document.querySelectorAll('.branch-card').forEach((c,i)=>{ c.classList.toggle('selected',i===idx); c.classList.toggle('dimmed',i!==idx); });
+  // For a new branch from current node, start a new session based on current story
+  const needsNewSession = false; // extend existing session with user_input
+  setTimeout(()=>generateNextChapter(title, desc), 400);
+}
+
+/* ══════════════════════════════════════════
+   Helpers
+══════════════════════════════════════════ */
+function appendChapterBlock(num, title, prose) {
+  const panel=document.getElementById('storyPanel');
+  // Remove empty state
+  const empty=panel.querySelector('.story-empty'); if(empty) empty.remove();
+  const div=document.createElement('div'); div.className='chapter-block';
+  div.innerHTML=`<div class="chapter-header"><span class="chapter-num">Chapter ${num}</span><span class="chapter-title">${title}</span></div><div class="chapter-prose">${proseToHtml(prose)}</div>`;
+  panel.appendChild(div);
+  panel.scrollTop=panel.scrollHeight;
+}
+
 function setCharStatus(state) {
-  if (state === 'active') {
-    document.querySelectorAll('.char-status').forEach(s => {
-      s.innerHTML = `<div class="status-dot" style="background:var(--accent-blue);box-shadow:0 0 6px rgba(91,141,238,0.6)"></div> Active`;
-    });
-  } else {
-    document.querySelectorAll('.char-status').forEach(s => {
-      s.innerHTML = `<div class="status-dot" style="background:var(--accent-gold);box-shadow:0 0 6px rgba(232,197,109,0.6)"></div> Done`;
-    });
-  }
+  document.querySelectorAll('.char-status').forEach(s=>{
+    s.innerHTML=state==='active'?'<div class="status-dot" style="background:var(--accent-blue);box-shadow:0 0 5px rgba(91,141,238,0.5)"></div>Active':'<div class="status-dot" style="background:var(--accent-gold);box-shadow:0 0 5px rgba(232,197,109,0.5)"></div>Done';
+  });
 }
 
-function addLogMessage({ sender, cls, text }) {
-  const container = document.getElementById('logMessages');
-  const msg = document.createElement('div');
-  msg.className = `log-message ${cls}`;
-  msg.innerHTML = `<div class="log-sender">${sender}</div><div class="log-content">${text}</div>`;
-  container.appendChild(msg);
-  container.scrollTop = container.scrollHeight;
+function addLogMsg({sender,cls,text}) {
+  const c=document.getElementById('logMessages');
+  const empty=c.querySelector('.log-empty'); if(empty) empty.remove();
+  const d=document.createElement('div'); d.className=`log-msg ${cls||''}`;
+  d.innerHTML=`<div class="log-sender">${sender}</div><div class="log-text">${text}</div>`;
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
 }
 
-function setProgress(pct, label) {
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressPct').textContent = pct + '%';
-  document.getElementById('progressLabel').textContent = label;
+function setProgress(pct,label){
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=pct+'%';
+  document.getElementById('progressLabel').textContent=label;
 }
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function copyStory() {
-  const text = document.getElementById('storyTextPanel').innerText;
-  if (!text || text.includes('No story generated')) { showToast('No story content to copy', 'error'); return; }
-  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard', 'success'));
+function updateStats(){
+  document.getElementById('statWords').textContent=totalWords;
+  document.getElementById('statChapters').textContent=chapterCount;
+  const branches=Object.values(storyTree.nodes).reduce((a,n)=>a+(n.parentId&&storyTree.nodes[n.parentId]?.children?.length>1?1:0),0);
+  document.getElementById('statBranches').textContent=branches;
+  if(storyStartTime) document.getElementById('statTime').textContent=((Date.now()-storyStartTime)/1000).toFixed(1)+'s';
 }
 
-function exportStory() {
-  const text = document.getElementById('storyTextPanel').innerText;
-  if (!text || text.includes('No story generated')) { showToast('No story content to export', 'error'); return; }
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = (document.getElementById('storyTitleDisplay').textContent || 'story') + '.txt';
-  a.click(); showToast('Exported as text file', 'success');
+function resetGenerateBtn(){
+  const btn=document.getElementById('generateBtn');btn.disabled=false;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Story';
 }
 
-function clearAll() {
-  renderedChapters = [];
-  currentSessionId = null;
-  document.getElementById('storyTheme').value = '';
-  document.getElementById('storySetting').value = '';
-  document.getElementById('directorNote').value = '';
-  document.getElementById('storyTextPanel').innerHTML = `
-    <div class="story-empty">
-      <div class="story-empty-icon">📖</div>
-      <div class="story-empty-text">No story generated yet</div>
-      <div class="story-empty-hint">Configure the director settings and characters, then click Generate</div>
-    </div>`;
-  document.getElementById('logMessages').innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:40px 0">No dialogue yet</div>`;
-  document.getElementById('statWords').textContent = '0';
-  document.getElementById('statTime').textContent = '—';
-  document.getElementById('statRounds').textContent = '0';
-  document.getElementById('storyTitleDisplay').textContent = 'Untitled Story';
+function copyStory(){
+  const t=document.getElementById('storyPanel').innerText;
+  if(!t||t.includes('Your story begins')) {showToast('No story to copy','error');return;}
+  navigator.clipboard.writeText(t).then(()=>showToast('Copied to clipboard','success'));
+}
+
+function exportStory(){
+  const t=document.getElementById('storyPanel').innerText;
+  if(!t||t.includes('Your story begins')){showToast('No story to export','error');return;}
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
+  a.download=(document.getElementById('storyTitle').value||'story')+'.txt'; a.click();
+  showToast('Exported','success');
+}
+
+function clearAll(){
+  storyTree.nodes={}; storyTree.rootId=null; storyTree.currentId=null; nodeCounter=0;
+  currentSessionId=null; isGenerating=false; chapterCount=0; totalWords=0; storyStartTime=null;
+  document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">📖</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
+  document.getElementById('branchSection').style.display='none';
+  document.getElementById('logMessages').innerHTML='<div class="log-empty">No dialogue yet.</div>';
   document.getElementById('progressWrap').classList.remove('visible');
-  const btn = document.querySelector('.btn-generate');
-  btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Story`;
-  isGenerating = false;
-  showToast('Cleared', 'info');
+  ['statWords','statChapters','statBranches'].forEach(id=>document.getElementById(id).textContent='0');
+  document.getElementById('statTime').textContent='—';
+  document.getElementById('treeEmpty').style.display='flex';
+  document.getElementById('treesvg').style.display='none';
+  resetGenerateBtn();
+  showToast('Cleared','info');
 }
 
-function showToast(msg, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-  toast.innerHTML = `<span style="font-weight:800">${icons[type]}</span> ${msg}`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = '0'; toast.style.transform = 'translateY(6px)';
-    toast.style.transition = 'all 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 2800);
+function showToast(msg,type='info'){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div'); t.className=`toast ${type}`;
+  t.innerHTML=`<span style="font-weight:800">${{success:'✓',error:'✕',info:'ℹ'}[type]}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(6px)';t.style.transition='all 0.25s';setTimeout(()=>t.remove(),260);},2600);
 }
 
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ══════════════════════════════════════════
+   Init
+══════════════════════════════════════════ */
 renderCharacters();
 initSetup();
 </script>

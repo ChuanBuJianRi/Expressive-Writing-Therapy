@@ -400,6 +400,95 @@ def get_status(session_id: str):
     })
 
 
+@story_bp.route("/generate-choices", methods=["POST"])
+def generate_choices():
+    """Generate 3 branch choices for the next chapter.
+
+    Request body: { "session_id": "...", "num_choices": 3 }
+    """
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    num_choices = min(data.get("num_choices", 3), 4)
+
+    story = _stories.get(session_id)
+    if not story:
+        return jsonify({"error": "Session not found"}), 404
+    if not story.chapters:
+        return jsonify({"error": "No chapters generated yet"}), 400
+
+    last = story.chapters[-1]
+    world_desc = story.world_config.get("description", "") or str(story.world_config)[:200]
+    char_names = ", ".join(c.get("name", "") for c in _get_session_characters(session_id))
+
+    from app.utils.llm_client import chat_json
+    prompt = (
+        f"Story theme: {story.theme}\n"
+        f"World: {world_desc}\n"
+        f"Characters: {char_names}\n\n"
+        f"Last chapter excerpt:\n{last.prose[:600]}\n\n"
+        f"Generate {num_choices} meaningfully distinct choices for what could happen next. "
+        "Each choice should lead the story in a different emotional or narrative direction.\n"
+        f'Return JSON: {{"choices": [{{"id": "A", "title": "short dramatic title (≤6 words)", '
+        '"description": "2 sentences describing what happens"}}]}}'
+    )
+    try:
+        result = chat_json([{"role": "user", "content": prompt}], temperature=0.95)
+        import json as _json
+        parsed = _json.loads(result)
+        return jsonify(parsed)
+    except Exception as e:
+        log.error("generate_choices error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+def _get_session_characters(session_id: str) -> list[dict]:
+    from app.api.session import get_session
+    session = get_session(session_id)
+    return session.get("characters", []) if session else []
+
+
+@story_bp.route("/suggest", methods=["POST"])
+def suggest():
+    """Generate AI suggestions for story title, theme, or world keywords.
+
+    Request body: { "type": "title"|"theme"|"keywords", "context": "..." }
+    """
+    data = request.get_json() or {}
+    suggest_type = data.get("type", "title")
+    context = data.get("context", "")
+
+    from app.utils.llm_client import chat_json
+    if suggest_type == "title":
+        prompt = (
+            f"Context: {context}\n"
+            "Generate 5 evocative story titles (2-6 words each). "
+            'Return JSON: {"suggestions": ["title1", "title2", ...]}'
+        )
+    elif suggest_type == "theme":
+        prompt = (
+            f"Context: {context}\n"
+            "Generate 5 compelling story themes or central conflicts (one sentence each). "
+            'Return JSON: {"suggestions": ["theme1", "theme2", ...]}'
+        )
+    else:  # keywords
+        prompt = (
+            f"Story concept: {context}\n"
+            "Generate world-building keywords in 4 categories. "
+            'Return JSON: {"categories": [{"name": "Environment", "words": [...]}, '
+            '{"name": "Atmosphere", "words": [...]}, '
+            '{"name": "Era / Tech", "words": [...]}, '
+            '{"name": "Special Elements", "words": [...]}]}'
+        )
+
+    try:
+        import json as _json
+        result = chat_json([{"role": "user", "content": prompt}], temperature=0.9)
+        return jsonify(_json.loads(result))
+    except Exception as e:
+        log.error("suggest error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @story_bp.route("/export/<session_id>", methods=["GET"])
 def export_story(session_id: str):
     """Export the complete story."""
