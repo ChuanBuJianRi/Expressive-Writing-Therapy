@@ -274,6 +274,42 @@
       color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3);
       border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
     }
+    /* Avatar */
+    .char-avatar {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; position: relative;
+      transition: all 0.18s; overflow: hidden;
+      border: 1.5px solid transparent;
+    }
+    .char-avatar:hover { border-color: var(--accent-purple); transform: scale(1.08); }
+    .char-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .char-avatar .avatar-edit-hint {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; opacity: 0; transition: opacity 0.18s; border-radius: 50%;
+    }
+    .char-avatar:hover .avatar-edit-hint { opacity: 1; }
+    /* Avatar Modal */
+    .avatar-modal {
+      position: fixed; inset: 0; z-index: 600; background: rgba(5,7,14,0.82);
+      backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center;
+    }
+    .avatar-modal.open { display: flex; animation: fadeIn 0.2s ease; }
+    .avatar-modal-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: 18px; padding: 24px; width: 420px; max-width: 92vw;
+    }
+    .avatar-preview-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+    .avatar-preview-item {
+      width: 72px; height: 72px; border-radius: 12px; overflow: hidden;
+      border: 2px solid var(--border); cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; background: var(--bg-deep);
+    }
+    .avatar-preview-item:hover { border-color: var(--accent-purple); transform: scale(1.05); }
+    .avatar-preview-item.selected { border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(232,197,109,0.2); }
+    .avatar-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-style-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 12px; }
     /* Tension bar */
     .tension-bar-wrap { display: none; padding: 6px 28px 0; }
     .tension-bar-wrap.visible { display: flex; align-items: center; gap: 8px; }
@@ -936,6 +972,39 @@
     </div>
   </div>
 
+  <!-- Avatar Generator Modal -->
+  <div class="avatar-modal" id="avatarModal">
+    <div class="avatar-modal-card">
+      <div style="font-size:15px;font-weight:800;margin-bottom:4px" id="avatarModalTitle">✨ Generate Avatar</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Describe the character's appearance — AI will generate a portrait</div>
+
+      <label class="field-label">Description</label>
+      <textarea class="f-textarea" id="avatarDesc" style="height:72px"
+        placeholder="e.g. young woman, silver hair, fierce amber eyes, scar on left cheek, glowing amulet…"></textarea>
+
+      <label class="field-label" style="margin-top:10px;display:block">Style</label>
+      <div class="avatar-style-chips">
+        <button class="chip active" onclick="toggleAvatarStyle(this,'fantasy illustration')">Fantasy</button>
+        <button class="chip" onclick="toggleAvatarStyle(this,'anime art style')">Anime</button>
+        <button class="chip" onclick="toggleAvatarStyle(this,'realistic oil painting')">Realistic</button>
+        <button class="chip" onclick="toggleAvatarStyle(this,'dark gothic illustration')">Gothic</button>
+        <button class="chip" onclick="toggleAvatarStyle(this,'watercolor portrait')">Watercolor</button>
+        <button class="chip" onclick="toggleAvatarStyle(this,'cyberpunk neon art')">Cyberpunk</button>
+      </div>
+
+      <button class="btn btn-purple" style="width:100%;margin-bottom:12px;padding:10px" id="avatarGenBtn" onclick="generateAvatarAI()">
+        ✦ Generate Avatar
+      </button>
+
+      <div class="avatar-preview-row" id="avatarPreviews"></div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeAvatarModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" id="avatarApplyBtn" disabled onclick="applyAvatar()">Apply Selected</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Story Character Modal -->
   <div id="addStoryCharOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(5,7,14,0.75);backdrop-filter:blur(12px);align-items:center;justify-content:center">
     <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:16px;padding:24px;width:380px;max-width:90vw">
@@ -1077,9 +1146,17 @@ function _renderCharGrid(gridId, chars, isStory) {
     const d = document.createElement('div');
     d.className = 'char-card'; d.dataset.color = c.color || 'blue';
     const badgeHtml = isStory ? `<span class="story-char-badge">Story</span>` : '';
+    const avatarInner = c.avatar
+      ? `<img src="${c.avatar}" alt="${c.name}"/>`
+      : c.emoji || '🎭';
+    const colorBg = {blue:'rgba(91,141,238,0.18)',purple:'rgba(155,109,255,0.18)',teal:'rgba(62,201,167,0.18)',rose:'rgba(240,98,146,0.18)'}[c.color||'blue']||'rgba(91,141,238,0.18)';
     d.innerHTML = `
       <div class="char-header">
-        <div class="char-emoji">${c.emoji||'🎭'}</div>
+        <div class="char-avatar" style="background:${colorBg}"
+          onclick="openAvatarModal('${c.id}',${isStory},'${(c.name||'').replace(/'/g,"\\'")}','${(c.personality||'').replace(/'/g,"\\'").slice(0,80)}')">
+          ${avatarInner}
+          <div class="avatar-edit-hint">✦</div>
+        </div>
         <div style="flex:1;min-width:0">
           <input class="char-name-input" value="${c.name}" placeholder="Name"
             oninput="updateCharField('${c.id}',${isStory},'name',this.value)"/>
@@ -1268,6 +1345,103 @@ function switchMainTab(name) {
     document.getElementById('panel'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
   });
   if(name==='tree') renderTreeSVG();
+}
+
+/* ══════════════════════════════════════════
+   Avatar Generator
+══════════════════════════════════════════ */
+let _avatarTargetId = null;
+let _avatarTargetIsStory = false;
+let _avatarStyle = 'fantasy illustration';
+let _avatarSelectedUrl = null;
+let _avatarGeneratedUrls = [];
+
+function openAvatarModal(charId, isStory, charName, personalityHint) {
+  _avatarTargetId = charId;
+  _avatarTargetIsStory = isStory;
+  _avatarSelectedUrl = null;
+  _avatarGeneratedUrls = [];
+  document.getElementById('avatarModalTitle').textContent = `✨ Generate Avatar — ${charName}`;
+  document.getElementById('avatarDesc').value = personalityHint || '';
+  document.getElementById('avatarPreviews').innerHTML = '';
+  document.getElementById('avatarApplyBtn').disabled = true;
+  const modal = document.getElementById('avatarModal');
+  modal.classList.add('open');
+}
+function closeAvatarModal() { document.getElementById('avatarModal').classList.remove('open'); }
+
+function toggleAvatarStyle(el, style) {
+  document.querySelectorAll('.avatar-style-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  _avatarStyle = style;
+}
+
+async function generateAvatarAI() {
+  const desc = document.getElementById('avatarDesc').value.trim();
+  if (!desc) { showToast('Describe the character first','error'); return; }
+
+  const arr = _avatarTargetIsStory ? storyCharacters : characters;
+  const char = arr.find(c => c.id == _avatarTargetId);
+  const charName = char ? char.name : 'Character';
+
+  const btn = document.getElementById('avatarGenBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="typing-indicator"><span class="typing-dot" style="background:currentColor"></span><span class="typing-dot" style="background:currentColor"></span><span class="typing-dot" style="background:currentColor"></span></span> Generating…';
+
+  // Add loading placeholder
+  const previews = document.getElementById('avatarPreviews');
+  const placeholder = document.createElement('div');
+  placeholder.className = 'avatar-preview-item';
+  placeholder.style.cssText = 'animation:pulse 1.5s infinite;background:var(--border)';
+  previews.appendChild(placeholder);
+
+  try {
+    const r = await fetch(`${API_BASE}/api/story/generate-avatar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        character_name: charName,
+        description: desc,
+        style: _avatarStyle,
+        api_key: setupConfig?.api_key || '',
+      }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    placeholder.remove();
+    _avatarGeneratedUrls.push(d.url);
+
+    const item = document.createElement('div');
+    item.className = 'avatar-preview-item';
+    item.innerHTML = `<img src="${d.url}" alt="avatar"/>`;
+    item.onclick = () => {
+      document.querySelectorAll('.avatar-preview-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      _avatarSelectedUrl = d.url;
+      document.getElementById('avatarApplyBtn').disabled = false;
+    };
+    previews.appendChild(item);
+    showToast('Avatar generated!','success');
+  } catch(e) {
+    placeholder.remove();
+    showToast('Avatar generation failed: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '✦ Generate Another';
+}
+
+function applyAvatar() {
+  if (!_avatarSelectedUrl) return;
+  const arr = _avatarTargetIsStory ? storyCharacters : characters;
+  const char = arr.find(c => c.id == _avatarTargetId);
+  if (char) {
+    char.avatar = _avatarSelectedUrl;
+    renderCharacters();
+  }
+  closeAvatarModal();
+  showToast('Avatar applied!','success');
 }
 
 /* ══════════════════════════════════════════

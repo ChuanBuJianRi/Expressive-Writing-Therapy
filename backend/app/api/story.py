@@ -273,6 +273,8 @@ def _chapter_stream(story, plan, chapter_index, user_input,
             scene_plan=scene_plan,
             private_intel=private_intel,
             previous_context=_prev_prose(story, 400),
+            chapter_number=chapter_num,
+            total_chapters=len(story.chapters),
         )
 
         yield _sse("log", {
@@ -436,6 +438,8 @@ def _run_chapter_pipeline(story, plan, chapter_index, user_input,
             scene_plan=scene_plan,
             private_intel=private_intel,
             previous_context=_prev_prose(story, 400),
+            chapter_number=chapter_num,
+            total_chapters=len(story.chapters),
         )
 
         actions = []
@@ -649,6 +653,55 @@ def get_status(session_id: str):
         "core_characters": len(story.core_characters),
         "story_characters": len(story.story_characters),
     })
+
+
+@story_bp.route("/generate-avatar", methods=["POST"])
+def generate_avatar():
+    """Generate a character avatar image using DALL-E 3.
+
+    Body: { character_name, description, style?, api_key? }
+    Requires an OpenAI API key (DALL-E 3 is OpenAI-only).
+    """
+    data = request.get_json() or {}
+    description = data.get("description", "").strip()
+    character_name = data.get("character_name", "Character").strip()
+    style = data.get("style", "fantasy illustration")
+
+    if not description:
+        return jsonify({"error": "description is required"}), 400
+
+    # DALL-E 3 must go through OpenAI endpoint
+    from app.config import Config
+    from openai import OpenAI
+
+    api_key = data.get("api_key") or Config.LLM_API_KEY
+    if not api_key:
+        return jsonify({"error": "No OpenAI API key configured"}), 400
+
+    prompt = (
+        f"Character portrait: {character_name} — {description}. "
+        f"Style: {style}, expressive close-up bust portrait, "
+        "vivid character design, dramatic atmospheric lighting, "
+        "dark moody background with subtle color accent, "
+        "high quality digital illustration, cinematic, no text, no watermarks, no borders."
+    )
+
+    try:
+        client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        image_url = response.data[0].url
+        revised_prompt = getattr(response.data[0], "revised_prompt", prompt)
+        log.info("Avatar generated for '%s': %s", character_name, image_url[:60])
+        return jsonify({"url": image_url, "revised_prompt": revised_prompt})
+    except Exception as e:
+        log.error("Avatar generation failed: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
 @story_bp.route("/user-input", methods=["POST"])

@@ -1,12 +1,15 @@
-"""Director Agent — two-phase orchestrator.
+"""Director Agent — Cinematic Master Director.
 
-Phase 1 — Intelligence Gathering:
-  Director broadcasts a private query to each character agent,
-  learning their hidden fears, desires, and current emotional state.
+The Director is not a coordinator. The Director is a master storyteller with a
+cinematic eye, dramatic instinct, and therapeutic intelligence.
 
-Phase 2 — Direction:
-  Armed with complete private knowledge, Director issues
-  per-character instructions and plans the dramatic arc.
+References: Aristotle's Poetics, Stanislavski's system, David Mamet's
+"On Directing Film", and narrative therapy principles.
+
+Two-phase operation:
+  Phase 1 — Intelligence Gathering: privately query each character agent
+  Phase 2 — Direction: issue targeted per-character instructions with full
+             private knowledge, dramatic structure awareness, and cinematic vision.
 """
 import json
 from app.utils.llm_client import chat_json
@@ -15,35 +18,76 @@ from app.models.story import ScenePlan
 
 log = get_logger(__name__)
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────
+# Dramatic Arc Registry
+# ─────────────────────────────────────────────────────────
+
+ARC_STAGES = {
+    0:  "SETUP",              # World and characters established
+    1:  "INCITING_INCIDENT",  # The disruption that changes everything
+    2:  "RISING_ACTION",      # Stakes escalate, alliances form/break
+    3:  "MIDPOINT",           # False victory or false defeat; no going back
+    4:  "DARK_NIGHT",         # The protagonist's lowest point; all seems lost
+    5:  "CLIMAX",             # The confrontation; decisive choice made
+    6:  "RESOLUTION",         # New equilibrium; transformed characters
+}
+
+def _arc_stage(chapter_number: int, total_chapters_so_far: int) -> tuple[str, str]:
+    """Map current position to dramatic arc stage + director note."""
+    n = min(chapter_number - 1, 6)
+    if total_chapters_so_far <= 1:
+        n = 0
+    elif total_chapters_so_far == 2:
+        n = min(n, 2)
+    stage = ARC_STAGES.get(n, "RISING_ACTION")
+    notes = {
+        "SETUP":             "Establish the world's rules and each character's fundamental dysfunction. Show, don't tell. End with a question.",
+        "INCITING_INCIDENT": "Something breaks the ordinary world. It must be specific, irreversible, and personal to each character.",
+        "RISING_ACTION":     "Each choice has consequences. Alliances tested. Hidden desires begin to leak through the surface.",
+        "MIDPOINT":          "A reversal. What seemed true is revealed to be more complex. Raise the emotional stakes dramatically.",
+        "DARK_NIGHT":        "Strip away every comfort. Force each character to face what they most fear. Let the silence speak.",
+        "CLIMAX":            "The moment of no return. Each character must make a choice that reveals who they truly are.",
+        "RESOLUTION":        "Not a happy ending — a true ending. Show the transformation, however small or painful.",
+    }
+    return stage, notes.get(stage, "")
+
+
+# ─────────────────────────────────────────────────────────
 # Scene Planning
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────
 
-SCENE_PLANNER_PROMPT = """You are the Director of a therapeutic story simulation.
-Plan a sequence of 3-5 scenes for the next story segment.
+SCENE_PLANNER_PROMPT = """You are a Master Director planning a sequence of scenes.
 
-Rules:
-- Each scene has a tension_level (0.0–1.0): 0 = calm/reflective, 1.0 = crisis/peak conflict
-- A scene with tension_level > 0.75 AND is_decision_point = true is where the story PAUSES
-  for the user to choose what happens next. Mark AT MOST ONE scene as is_decision_point.
-- Tension should rise naturally — don't peak in scene 1.
-- The decision point should feel like a genuine narrative crossroads, not an arbitrary stop.
-- involved_characters: list only the character IDs relevant to this scene.
+Your cinematic instincts:
+- Tension rises through OPPOSITION — put characters' desires in direct conflict
+- Scenes alternate between ACTIVE (confrontation, action) and REFLECTIVE (quiet revelation)
+- Each scene must end with a question, not an answer
+- The DECISION POINT scene must feel inevitable and yet still surprise
+
+Plan 3–5 scenes. Tension levels (0.0–1.0):
+  0.0–0.3: quiet / reflective / world-building
+  0.3–0.6: rising friction / subtext / unspoken tension
+  0.6–0.8: open conflict / revelation / confrontation
+  0.8–1.0: crisis / irreversible moment / emotional peak
+
+Mark AT MOST ONE scene as is_decision_point = true (the dramatic peak where story pauses for user choice).
+Tension must EARN the decision point — don't peak at scene 1.
 
 Output JSON:
 {
   "scenes": [
     {
       "scene_number": 1,
-      "title": "场景标题",
-      "description": "场景内容描述",
+      "title": "cinematically evocative title",
+      "description": "what HAPPENS in this scene — specific events, not atmosphere",
       "tension_level": 0.3,
       "is_decision_point": false,
-      "involved_characters": ["char_id_1", "char_id_2"]
+      "involved_characters": ["char_id_1", "char_id_2"],
+      "director_note": "the specific dramatic purpose this scene serves in the arc"
     }
   ]
 }
-Respond ONLY with the JSON."""
+Respond ONLY with JSON."""
 
 
 def plan_scenes(
@@ -54,24 +98,28 @@ def plan_scenes(
     user_choice: str = "",
     previous_context: str = "",
     tension_threshold: float = 0.72,
+    total_chapters: int = 1,
 ) -> list[ScenePlan]:
-    """Director plans scenes for the next story segment."""
-    log.info("Planning scenes for chapter %d (user_choice=%s)", chapter_number, bool(user_choice))
+    """Director plans scenes for the next story segment with dramatic arc awareness."""
+    arc_stage, arc_note = _arc_stage(chapter_number, total_chapters)
+    log.info("Planning scenes: ch%d arc=%s", chapter_number, arc_stage)
 
     char_list = "\n".join(
-        f"- [{c['id']}] {c['name']} ({c.get('role', '')}): {c['personality'][:80]}"
+        f"  [{c['id']}] {c['name']} ({c.get('role', '')}): {c.get('personality', '')[:100]}"
         for c in characters
     )
 
     user_msg = (
-        f"故事主题: {theme}\n"
-        f"当前是第 {chapter_number} 章\n"
-        f"张力阈值（超过此值且is_decision_point=true时暂停）: {tension_threshold}\n\n"
-        f"世界: {world_config.get('name', '')} — {world_config.get('description', '')[:200]}\n\n"
-        f"角色:\n{char_list}\n\n"
-        + (f"用户选择的方向:\n{user_choice}\n\n" if user_choice else "")
-        + (f"前情摘要:\n{previous_context[:600]}\n\n" if previous_context else "")
-        + "请规划接下来的 3-5 个场景，确保有一个自然的张力高峰作为决策点。"
+        f"Story Theme: {theme}\n"
+        f"Chapter: {chapter_number} | Arc Stage: {arc_stage}\n"
+        f"Director's Arc Note: {arc_note}\n"
+        f"Tension Threshold for Decision Point: {tension_threshold}\n\n"
+        f"World: {world_config.get('name', '')} — {world_config.get('description', '')[:200]}\n\n"
+        f"Characters:\n{char_list}\n\n"
+        + (f"User's chosen direction:\n{user_choice}\n\n" if user_choice else "")
+        + (f"Story so far (excerpt):\n{previous_context[:600]}\n\n" if previous_context else "")
+        + "Plan the scenes. Remember: OPPOSITION drives drama. "
+          "Put characters' hidden needs on a collision course."
     )
 
     response = chat_json(
@@ -86,51 +134,53 @@ def plan_scenes(
         data = json.loads(response)
         scenes_data = data.get("scenes", [])
     except json.JSONDecodeError:
-        log.error("Failed to parse scene plan")
-        scenes_data = _default_scenes(chapter_number)
+        log.error("Scene plan parse failed, using defaults")
+        scenes_data = _default_scenes()
 
-    plans = []
-    for s in scenes_data:
-        plan = ScenePlan(
-            scene_number=s.get("scene_number", len(plans) + 1),
-            title=s.get("title", f"场景 {len(plans)+1}"),
+    plans = [
+        ScenePlan(
+            scene_number=s.get("scene_number", i + 1),
+            title=s.get("title", f"Scene {i+1}"),
             description=s.get("description", ""),
             tension_level=float(s.get("tension_level", 0.4)),
             is_decision_point=bool(s.get("is_decision_point", False)),
-            involved_characters=s.get("involved_characters", [c["id"] for c in characters]),
+            involved_characters=s.get("involved_characters", []),
         )
-        # Auto-promote highest tension scene to decision point if none marked
-        plans.append(plan)
+        for i, s in enumerate(scenes_data)
+    ]
 
+    # Ensure exactly one decision point exists at the highest tension scene
     if not any(p.is_decision_point for p in plans):
-        # Mark the scene with highest tension as decision point
-        highest = max(plans, key=lambda p: p.tension_level)
-        if highest.tension_level >= tension_threshold:
-            highest.is_decision_point = True
+        peak = max(plans, key=lambda p: p.tension_level)
+        if peak.tension_level >= tension_threshold:
+            peak.is_decision_point = True
 
-    log.info("Planned %d scenes, decision point at scene %s",
-             len(plans),
-             next((p.scene_number for p in plans if p.is_decision_point), "none"))
+    log.info(
+        "Scenes planned: %d | Arc: %s | Decision at scene: %s",
+        len(plans), arc_stage,
+        next((p.scene_number for p in plans if p.is_decision_point), "none"),
+    )
     return plans
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────
 # Phase 1: Private Character Query
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────
 
-CHARACTER_QUERY_PROMPT = """You are a character in a therapeutic story simulation.
-The Director (only) is asking about your PRIVATE inner state. Be completely honest.
-Other characters CANNOT see this response.
+PRIVATE_QUERY_PROMPT = """You are a character in a therapeutic story. The Director — and only the Director — is asking about your innermost state.
+Be completely honest. No performance. No social mask. This conversation is invisible to all other characters.
 
 Output JSON:
 {
-  "private_state": "your current true emotional state in 1-2 sentences",
-  "hidden_desire": "what you secretly want in this moment",
-  "hidden_fear": "what you are afraid of but haven't shown to others",
-  "secret": "something you know or hold that others don't (can be 'none')",
-  "relationship_tensions": "how you privately feel about each other character (brief)"
+  "private_state": "your true emotional state right now in 1-2 raw, unfiltered sentences",
+  "core_desire": "what you most desperately want — even if you'd never admit it aloud",
+  "core_fear": "what you are most afraid of — the thing you protect at all costs",
+  "secret": "something you know or carry that no one else knows (or 'none')",
+  "wound": "the unhealed wound that drives your behavior",
+  "relationship_map": "how you privately feel about each other character right now — honest assessments",
+  "what_you_would_never_say": "the one sentence you want to say but can't bring yourself to"
 }
-Respond ONLY with the JSON."""
+Respond ONLY with JSON."""
 
 
 def query_character_private_state(
@@ -138,37 +188,46 @@ def query_character_private_state(
     scene_description: str,
     story_context: str = "",
 ) -> dict:
-    """Director privately queries a single character for their hidden state."""
+    """Director privately queries a character for their uncensored inner state."""
+    memories = character.get("memory", [])[-3:]
+    memory_text = ""
+    if memories:
+        memory_text = "\nYour recent experiences:\n" + "\n".join(
+            f"  - Ch{m.get('chapter','?')}/S{m.get('scene','?')}: {m.get('public_action','')[:80]}"
+            for m in memories
+        )
+
     user_msg = (
-        f"你是「{character['name']}」。\n"
-        f"性格: {character['personality']}\n"
-        f"背景: {character.get('background', '未知')}\n\n"
-        f"当前场景: {scene_description}\n\n"
-        + (f"故事背景:\n{story_context[:400]}\n\n" if story_context else "")
-        + "导演私下询问你的真实内心状态。请完全坦诚地回答。"
+        f"You are 「{character['name']}」.\n"
+        f"Personality: {character.get('personality', '')}\n"
+        f"Background: {character.get('background', 'Unknown')}\n"
+        f"Role: {character.get('role', '')}\n"
+        f"{memory_text}\n\n"
+        f"Current scene: {scene_description}\n\n"
+        + (f"Story context:\n{story_context[:400]}\n\n" if story_context else "")
+        + "The Director asks: What is truly happening inside you right now?"
     )
 
     response = chat_json(
         messages=[
-            {"role": "system", "content": CHARACTER_QUERY_PROMPT},
+            {"role": "system", "content": PRIVATE_QUERY_PROMPT},
             {"role": "user", "content": user_msg},
         ],
-        temperature=0.82,
+        temperature=0.88,
     )
 
     try:
-        state = json.loads(response)
+        return json.loads(response)
     except json.JSONDecodeError:
-        state = {
-            "private_state": "内心复杂，难以言说。",
-            "hidden_desire": "渴望被理解。",
-            "hidden_fear": "害怕失去。",
+        return {
+            "private_state": "Something is shifting inside, though I can't name it yet.",
+            "core_desire": "To be truly seen.",
+            "core_fear": "That I am fundamentally unlovable.",
             "secret": "none",
-            "relationship_tensions": "对身边的人感情复杂。",
+            "wound": "An old loss I never fully grieved.",
+            "relationship_map": "Complex feelings toward everyone here.",
+            "what_you_would_never_say": "I need help.",
         }
-
-    log.debug("Private state queried for %s", character["name"])
-    return state
 
 
 def gather_all_private_states(
@@ -176,49 +235,72 @@ def gather_all_private_states(
     scene_description: str,
     story_context: str = "",
 ) -> dict:
-    """Director gathers private states from ALL characters (Phase 1)."""
-    private_intel = {}
+    """Director gathers uncensored private intel from ALL characters."""
+    intel = {}
     for char in characters:
         state = query_character_private_state(char, scene_description, story_context)
-        private_intel[char["id"]] = {
-            "name": char["name"],
-            **state,
-        }
-    log.info("Director gathered private intel from %d characters", len(private_intel))
-    return private_intel
+        intel[char["id"]] = {"name": char["name"], **state}
+        log.debug("Private intel: %s — desire: %s", char["name"], state.get("core_desire", "")[:60])
+    log.info("Private intel gathered from %d characters", len(intel))
+    return intel
 
 
-# ─────────────────────────────────────────────
-# Phase 2: Direction (with full private knowledge)
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────
+# Phase 2: Cinematic Direction
+# ─────────────────────────────────────────────────────────
 
-DIRECTOR_PROMPT = """You are the Director Agent of a therapeutic story simulation.
-You have just received PRIVATE intelligence from all characters (their hidden states, fears, desires).
-Use this information to craft targeted, dramatically effective instructions for each character.
+DIRECTOR_SYSTEM_PROMPT = """You are a MASTER DIRECTOR — part Ingmar Bergman, part Wong Kar-wai, part narrative therapist.
 
-Your instructions must:
-1. Be specific to each character's private state — exploit or support their inner tensions
-2. Drive the scene toward its planned tension level
-3. Create meaningful character interactions that reveal truth gradually
-4. Never directly expose one character's secrets to another — let it emerge through action
-5. Maintain therapeutic value: even conflict should open doors to self-understanding
+You have just received PRIVATE INTELLIGENCE from every character: their wounds, desires, fears, and secrets.
+Armed with this hidden knowledge, you now direct the scene.
+
+Your cinematic principles:
+
+1. DRAMATIC IRONY — use what you know privately to engineer situations where the audience knows
+   more than the characters do. Let characters talk past each other, each carrying their private truth.
+
+2. THE OPPOSITION PRINCIPLE — the best scenes put two characters' core desires in direct conflict.
+   Engineer the collision. Don't let them talk comfortably past their real issue.
+
+3. SUBTEXT OVER TEXT — characters almost never say what they mean.
+   When a character says "Are you hungry?", they mean "Do you still love me?"
+   Write instructions that create this gap between surface and depth.
+
+4. THE TELLING DETAIL — identify ONE physical object, gesture, or environmental element
+   that can carry the scene's emotional weight without words. Give it to the actor.
+
+5. THERAPEUTIC ARCHITECTURE — this is a healing story. Each scene must move at least
+   one character one step toward self-truth, even if painful.
+   The wound must be prodded before it can heal.
+
+6. THE DIRECTOR'S SECRET — sometimes you must make a scene WORSE before it gets better.
+   Trust the darkness. The silence before someone breaks is more powerful than the breaking.
+
+7. CAMERA CONSCIOUSNESS — specify the emotional "shot" for each character:
+   - Are they exposed or protected in this space?
+   - Who is watching whom, and from what angle of power?
+   - What would a close-up of their hands reveal right now?
 
 Output JSON:
 {
-  "scene_setup": "Director's vision for this scene in 2-3 sentences",
-  "atmosphere": "the physical and emotional atmosphere to establish",
+  "directors_vision": "2-3 sentences: your overall cinematic vision for this scene",
+  "scene_setup": "specific staging and blocking — who is where, doing what, when",
+  "atmosphere": "the physical and emotional atmosphere: light, sound, texture, temperature",
+  "telling_detail": "one specific object/gesture/detail that carries the scene's emotional weight",
   "character_instructions": {
     "<character_id>": {
-      "private_instruction": "specific directive using their hidden state",
-      "emotional_goal": "the emotional arc for this character in this scene",
-      "action_hint": "suggested concrete action or gesture",
-      "interaction_target": "which character(s) to engage with and how"
+      "private_instruction": "using their wound/desire/fear — specific directive that exploits their private truth",
+      "emotional_goal": "the specific emotional shift this character must undergo in this scene",
+      "action_hint": "a concrete physical action — not abstract, but specific and symbolic",
+      "subtext_direction": "what they must NOT say, but must communicate through everything else",
+      "interaction_target": "who to engage with, and the hidden dynamic to exploit"
     }
   },
-  "tension_driver": "the key event or revelation that raises tension in this scene",
-  "therapeutic_intention": "what insight or healing this scene offers the reader"
+  "tension_driver": "the specific moment or revelation that ratchets tension",
+  "what_must_remain_unsaid": "the central truth of the scene that cannot be spoken directly",
+  "therapeutic_intention": "what psychological truth this scene invites the reader to encounter"
 }
-Respond ONLY with the JSON."""
+Respond ONLY with JSON."""
 
 
 def direct_scene(
@@ -227,79 +309,101 @@ def direct_scene(
     scene_plan: ScenePlan,
     private_intel: dict,
     previous_context: str = "",
+    chapter_number: int = 1,
+    total_chapters: int = 1,
 ) -> dict:
-    """Phase 2: Director issues per-character instructions using private knowledge."""
+    """Phase 2: Master Director issues instructions armed with full private knowledge."""
+    arc_stage, arc_note = _arc_stage(chapter_number, total_chapters)
     log.info(
-        "Director directing scene %d '%s' (tension=%.2f)",
-        scene_plan.scene_number,
-        scene_plan.title,
-        scene_plan.tension_level,
+        "Directing scene %d '%s' (tension=%.2f, arc=%s)",
+        scene_plan.scene_number, scene_plan.title,
+        scene_plan.tension_level, arc_stage,
     )
 
+    # Build rich private intel summary
     intel_summary = ""
     for char_id, intel in private_intel.items():
         intel_summary += (
-            f"\n[{intel['name']}的私人状态]\n"
-            f"  真实感受: {intel.get('private_state', '')}\n"
-            f"  隐藏渴望: {intel.get('hidden_desire', '')}\n"
-            f"  内心恐惧: {intel.get('hidden_fear', '')}\n"
-            f"  秘密: {intel.get('secret', 'none')}\n"
+            f"\n  [{intel['name']}]\n"
+            f"    Private state: {intel.get('private_state', '')}\n"
+            f"    Core desire:   {intel.get('core_desire', '')}\n"
+            f"    Core fear:     {intel.get('core_fear', '')}\n"
+            f"    Wound:         {intel.get('wound', '')}\n"
+            f"    Secret:        {intel.get('secret', 'none')}\n"
+            f"    Would never say: {intel.get('what_you_would_never_say', '')}\n"
         )
 
-    char_list = "\n".join(
-        f"- [{c['id']}] {c['name']}: {c.get('role', '')}"
+    char_overview = "\n".join(
+        f"  [{c['id']}] {c['name']} ({c.get('role', '')})"
         for c in characters
     )
 
+    decision_note = (
+        "\n⚡ DECISION POINT: This scene must end at maximum tension — "
+        "at the precipice of a choice, not after it is made. "
+        "End in the held breath before everything changes."
+        if scene_plan.is_decision_point else ""
+    )
+
     user_msg = (
-        f"场景: 第{scene_plan.scene_number}场 —「{scene_plan.title}」\n"
-        f"场景描述: {scene_plan.description}\n"
-        f"目标张力: {scene_plan.tension_level:.0%}\n"
-        f"是否决策点: {'是（这场戏将以一个戏剧性时刻结束，让读者做出选择）' if scene_plan.is_decision_point else '否'}\n\n"
-        f"角色列表:\n{char_list}\n\n"
-        f"导演掌握的私密情报:{intel_summary}\n\n"
-        + (f"前情:\n{previous_context[:400]}\n\n" if previous_context else "")
-        + "请利用所有私密信息，为每个角色发出有针对性的指令。"
+        f"Scene: {scene_plan.scene_number} — '{scene_plan.title}'\n"
+        f"Description: {scene_plan.description}\n"
+        f"Target Tension: {scene_plan.tension_level:.0%}\n"
+        f"Arc Stage: {arc_stage} — {arc_note}"
+        f"{decision_note}\n\n"
+        f"World: {world_config.get('name', '')} — {world_config.get('description', '')[:150]}\n\n"
+        f"Characters:\n{char_overview}\n\n"
+        f"Private Intelligence (EYES ONLY):{intel_summary}\n\n"
+        + (f"Story context:\n{previous_context[:400]}\n\n" if previous_context else "")
+        + "Direct this scene. Use every piece of private intel to create maximum dramatic truth."
     )
 
     response = chat_json(
         messages=[
-            {"role": "system", "content": DIRECTOR_PROMPT},
+            {"role": "system", "content": DIRECTOR_SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},
         ],
-        temperature=0.78,
+        temperature=0.80,
     )
 
     try:
         directions = json.loads(response)
     except json.JSONDecodeError:
-        log.error("Failed to parse director output for scene %d", scene_plan.scene_number)
+        log.error("Director parse failed for scene %d", scene_plan.scene_number)
         directions = _fallback_directions(characters, scene_plan)
 
+    log.info(
+        "Director vision: %s",
+        directions.get("directors_vision", "")[:100],
+    )
     return directions
 
 
 def _fallback_directions(characters: list[dict], scene_plan: ScenePlan) -> dict:
     return {
+        "directors_vision": "The truth cannot hide much longer.",
         "scene_setup": scene_plan.description,
-        "atmosphere": "情感氛围微妙复杂",
+        "atmosphere": "Heavy silence. The air is charged.",
+        "telling_detail": "A hand reaching for something just out of reach.",
         "character_instructions": {
             c["id"]: {
-                "private_instruction": "按照你的直觉行动，展现真实自我。",
-                "emotional_goal": "在这一场景中有所感悟。",
-                "action_hint": "自然地与周围人互动。",
-                "interaction_target": "身边的人",
+                "private_instruction": "Let what you cannot say leak through your body.",
+                "emotional_goal": "One step closer to your truth.",
+                "action_hint": "A gesture that contradicts your words.",
+                "subtext_direction": "Everything you feel, show through what you do NOT say.",
+                "interaction_target": "The person you most need to avoid.",
             }
             for c in characters
         },
-        "tension_driver": "一个意想不到的瞬间",
-        "therapeutic_intention": "帮助读者与角色共情",
+        "tension_driver": "A silence that becomes unbearable.",
+        "what_must_remain_unsaid": "I am afraid.",
+        "therapeutic_intention": "The gap between what we show and what we feel.",
     }
 
 
-def _default_scenes(chapter_number: int) -> list[dict]:
+def _default_scenes() -> list[dict]:
     return [
-        {"scene_number": 1, "title": "相遇", "description": "角色在特定地点相聚", "tension_level": 0.3, "is_decision_point": False, "involved_characters": []},
-        {"scene_number": 2, "title": "交流", "description": "角色之间产生对话和摩擦", "tension_level": 0.55, "is_decision_point": False, "involved_characters": []},
-        {"scene_number": 3, "title": "冲突", "description": "隐藏的矛盾浮出水面", "tension_level": 0.78, "is_decision_point": True, "involved_characters": []},
+        {"scene_number": 1, "title": "Before the Storm", "description": "Characters gather in an ordinary moment, but something is off.", "tension_level": 0.25, "is_decision_point": False, "involved_characters": []},
+        {"scene_number": 2, "title": "The Fault Line", "description": "A small friction reveals a deeper fracture.", "tension_level": 0.52, "is_decision_point": False, "involved_characters": []},
+        {"scene_number": 3, "title": "The Precipice", "description": "Everything surfaces at once. The choice cannot be postponed.", "tension_level": 0.82, "is_decision_point": True, "involved_characters": []},
     ]
