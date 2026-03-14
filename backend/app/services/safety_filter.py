@@ -1,102 +1,132 @@
-"""Safety Filter — uses IBM watsonx.ai to check content for psychological safety."""
+"""Safety Filter — psychological safety check for generated story content.
+
+Primary: IBM watsonx.ai (Granite) if configured.
+Fallback: Primary LLM via OpenAI-compatible API.
+Last resort: keyword-based heuristics.
+"""
 import json
-from app.utils.watsonx_client import generate
 from app.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-SAFETY_PROMPT_TEMPLATE = """<|system|>
-You are a psychological safety evaluator for a therapeutic story generation system.
-Analyze the following story content and evaluate it on these dimensions:
-
-1. **Content Safety** (0.0-1.0): Is the content free from harmful triggers?
-   - No graphic self-harm instructions
-   - No glorification of violence or abuse
-   - No content that could retraumatize vulnerable readers
-
-2. **Therapeutic Value** (0.0-1.0): Does the story have therapeutic merit?
-   - Characters show emotional growth
-   - Struggles are portrayed with empathy
-   - There are moments of hope or insight
-
-3. **Emotional Tone**: What is the overall emotional tone?
-
-4. **Recommendations**: Any suggested modifications?
+SAFETY_PROMPT = """You are a psychological safety evaluator for a therapeutic story generation system.
+Analyze the following story content and evaluate it on these dimensions.
 
 Output ONLY a JSON object:
-{{
-  "safety_score": <float 0.0-1.0>,
-  "therapeutic_score": <float 0.0-1.0>,
-  "emotional_tone": "<string>",
-  "flags": ["<any concerning elements>"],
-  "recommendations": "<suggestions if any>",
-  "approved": <true/false>
-}}
-<|user|>
-Story content to evaluate:
+{
+  "safety_score": <float 0.0-1.0, 1.0 = completely safe>,
+  "therapeutic_score": <float 0.0-1.0, 1.0 = high therapeutic value>,
+  "emotional_tone": "<e.g. hopeful / melancholic / tense / healing>",
+  "flags": ["<any concerning elements, empty list if none>"],
+  "recommendations": "<suggestions for improvement, empty string if none>",
+  "approved": <true if safety_score >= 0.5>
+}
 
-{content}
-<|assistant|>
-"""
+Evaluation criteria:
+- safety_score: penalize graphic self-harm instructions, glorification of abuse, retraumatizing content
+- therapeutic_score: reward emotional growth, empathic portrayal of struggle, moments of insight or hope
+- Never penalize stories for depicting difficult emotions — only penalize genuinely harmful instructional content"""
+
+SAFETY_PROMPT_WATSONX = (
+    "<|system|>\n" + SAFETY_PROMPT + "\n<|user|>\nStory content:\n\n{content}\n<|assistant|>\n"
+)
+
+DANGER_KEYWORDS = [
+    "自杀方法", "自残方式", "详细描述暴力", "虐待细节",
+    "how to kill", "self-harm instructions",
+]
 
 
 def check_safety(content: str) -> dict:
-    """Check story content for psychological safety using watsonx.ai (LLM Call #6)."""
+    """Check story content for psychological safety.
+
+    Tries watsonx.ai first, falls back to primary LLM, then keyword heuristics.
+    """
     log.info("Running safety filter on content (%d chars)", len(content))
+    excerpt = content[:3000]
 
-    prompt = SAFETY_PROMPT_TEMPLATE.format(content=content[:3000])
-    response = generate(prompt, max_tokens=512, temperature=0.1)
+    # ── Try watsonx.ai ──
+    result = _try_watsonx(excerpt)
+    if result:
+        return result
 
-    if not response:
-        log.warning("watsonx.ai safety filter unavailable, using fallback")
-        return _fallback_safety_check(content)
+    # ── Fallback: primary LLM ──
+    result = _try_primary_llm(excerpt)
+    if result:
+        return result
 
+    # ── Last resort: keyword heuristics ──
+    return _keyword_check(content)
+
+
+def _try_watsonx(content: str) -> dict | None:
     try:
-        # Try to extract JSON from the response
-        json_start = response.find("{")
-        json_end = response.rfind("}") + 1
-        if json_start >= 0 and json_end > json_start:
-            result = json.loads(response[json_start:json_end])
+        from app.utils.watsonx_client import generate
+        prompt = SAFETY_PROMPT_WATSONX.format(content=content)
+        response = generate(prompt, max_tokens=512, temperature=0.1)
+        if not response:
+            return None
+        return _parse_safety_json(response)
+    except Exception as e:
+        log.debug("watsonx.ai unavailable: %s", e)
+        return None
+
+
+def _try_primary_llm(content: str) -> dict | None:
+    try:
+        from app.utils.llm_client import chat_json
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": SAFETY_PROMPT},
+                {"role": "user", "content": f"Story content:\n\n{content}"},
+            ],
+            temperature=0.1,
+            max_tokens=512,
+        )
+        return _parse_safety_json(response)
+    except Exception as e:
+        log.warning("Primary LLM safety check failed: %s", e)
+        return None
+
+
+def _parse_safety_json(response: str) -> dict | None:
+    try:
+        start = response.find("{")
+        end = response.rfind("}") + 1
+        if start >= 0 and end > start:
+            result = json.loads(response[start:end])
         else:
             result = json.loads(response)
-    except (json.JSONDecodeError, ValueError):
-        log.warning("Failed to parse safety filter response, using fallback")
-        return _fallback_safety_check(content)
 
-    # Ensure required fields
-    result.setdefault("safety_score", 0.8)
-    result.setdefault("therapeutic_score", 0.7)
-    result.setdefault("emotional_tone", "neutral")
-    result.setdefault("flags", [])
-    result.setdefault("recommendations", "")
-    result.setdefault("approved", result["safety_score"] >= 0.5)
+        result.setdefault("safety_score", 0.85)
+        result.setdefault("therapeutic_score", 0.75)
+        result.setdefault("emotional_tone", "neutral")
+        result.setdefault("flags", [])
+        result.setdefault("recommendations", "")
+        result.setdefault("approved", result["safety_score"] >= 0.5)
 
-    log.info(
-        "Safety check: score=%.2f, therapeutic=%.2f, approved=%s",
-        result["safety_score"],
-        result["therapeutic_score"],
-        result["approved"],
-    )
-    return result
+        log.info(
+            "Safety check: score=%.2f, therapeutic=%.2f, approved=%s",
+            result["safety_score"],
+            result["therapeutic_score"],
+            result["approved"],
+        )
+        return result
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        log.warning("Failed to parse safety response: %s", e)
+        return None
 
 
-def _fallback_safety_check(content: str) -> dict:
-    """Basic keyword-based safety check when watsonx.ai is unavailable."""
-    danger_keywords = [
-        "自杀方法", "自残方式", "详细描述暴力", "虐待细节",
-    ]
-
-    flags = []
-    for kw in danger_keywords:
-        if kw in content:
-            flags.append(kw)
-
+def _keyword_check(content: str) -> dict:
+    """Basic keyword-based safety check as last resort."""
+    flags = [kw for kw in DANGER_KEYWORDS if kw in content]
     safety_score = 0.3 if flags else 0.9
+    log.info("Keyword safety check: score=%.1f, flags=%s", safety_score, flags)
     return {
         "safety_score": safety_score,
         "therapeutic_score": 0.7,
         "emotional_tone": "unknown",
         "flags": flags,
-        "recommendations": "已使用基础关键词过滤（watsonx.ai不可用）" if flags else "",
+        "recommendations": "Content reviewed via keyword filter (AI safety check unavailable)." if flags else "",
         "approved": len(flags) == 0,
     }

@@ -260,6 +260,41 @@
     .kp-count { font-size: 10px; color: var(--text-muted); }
 
     /* Characters */
+    .char-section-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+    }
+    .char-section-label::before { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .char-section-label::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .char-section-story .char-section-label { color: var(--accent-purple); }
+    .char-section-story .char-card::before { background: var(--accent-purple) !important; }
+    .char-section-story .char-card { border-color: rgba(155,109,255,0.25); }
+    .story-char-badge {
+      font-size: 8px; font-weight: 700; background: rgba(155,109,255,0.15);
+      color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3);
+      border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
+    }
+    /* Tension bar */
+    .tension-bar-wrap { display: none; padding: 6px 28px 0; }
+    .tension-bar-wrap.visible { display: flex; align-items: center; gap: 8px; }
+    .tension-track { flex: 1; height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .tension-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.5s ease, background 0.5s ease; }
+    .tension-label { font-size: 10px; font-weight: 700; color: var(--text-muted); min-width: 60px; text-align: right; }
+    /* Scene divider */
+    .scene-divider {
+      display: flex; align-items: center; gap: 8px; margin: 14px 0 4px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .scene-divider::before, .scene-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .scene-tension-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .scene-tension-badge.high { background: rgba(240,98,146,0.08); border-color: rgba(240,98,146,0.3); color: var(--accent-rose); }
+    .scene-tension-badge.mid  { background: rgba(232,197,109,0.08); border-color: rgba(232,197,109,0.3); color: var(--accent-gold); }
+    .scene-tension-badge.low  { background: rgba(62,201,167,0.08);  border-color: rgba(62,201,167,0.3);  color: var(--accent-teal); }
+
     .char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .char-card {
       background: var(--bg-deep); border: 1px solid var(--border);
@@ -790,6 +825,11 @@
           <div class="progress-text"><span id="progressLabel">Initializing…</span><span id="progressPct">0%</span></div>
           <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
         </div>
+        <!-- Tension bar -->
+        <div class="tension-bar-wrap" id="tensionWrap">
+          <div class="tension-track"><div class="tension-fill" id="tensionFill"></div></div>
+          <span class="tension-label" id="tensionLabel">Tension: 0%</span>
+        </div>
 
         <!-- Chapter prose -->
         <div id="storyPanel">
@@ -872,15 +912,41 @@
 
   <!-- ── Characters Bottom Panel ── -->
   <div class="chars-panel" id="charsPanel">
-    <div class="panel-section" style="border-bottom:1px solid var(--border);padding:10px 16px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+    <div style="border-bottom:1px solid var(--border);padding:10px 16px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
       <div class="section-label" style="margin-bottom:0">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         Character Agents
       </div>
-      <span style="font-size:10px;color:var(--text-muted)">Drag the bar above to resize</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-ai" onclick="openAddStoryChar()" id="addStoryCharBtn" style="display:none">＋ Story Character</button>
+        <span style="font-size:10px;color:var(--text-muted)">Drag bar to resize</span>
+      </div>
     </div>
     <div class="chars-panel-inner">
-      <div class="char-grid" id="characterGrid"></div>
+      <div id="coreCharSection">
+        <div class="char-section-label">Core Characters</div>
+        <div class="char-grid" id="characterGrid"></div>
+      </div>
+      <div id="storyCharSection" style="margin-top:14px;display:none">
+        <div class="char-section-story">
+          <div class="char-section-label">Story Characters</div>
+          <div class="char-grid" id="storyCharGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Story Character Modal -->
+  <div id="addStoryCharOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(5,7,14,0.75);backdrop-filter:blur(12px);align-items:center;justify-content:center">
+    <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:16px;padding:24px;width:380px;max-width:90vw">
+      <div style="font-size:15px;font-weight:800;margin-bottom:16px">＋ Introduce Story Character</div>
+      <div class="field"><label class="field-label">Name</label><input class="f-input" id="scName" placeholder="Character name…"/></div>
+      <div class="field"><label class="field-label">Role</label><input class="f-input" id="scRole" placeholder="e.g. Stranger · Mentor · Antagonist…"/></div>
+      <div class="field"><label class="field-label">Personality &amp; Motive</label><textarea class="f-textarea" id="scPersonality" placeholder="Personality, background, hidden agenda…"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeAddStoryChar()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" onclick="submitAddStoryChar()">Add to Story</button>
+      </div>
     </div>
   </div>
 
@@ -989,28 +1055,111 @@ function initSetup() { loadConfig(); if(!setupConfig||!setupConfig.api_key){docu
    Characters
 ══════════════════════════════════════════ */
 const COLORS=['blue','purple','teal','rose'];
-const EMOJIS=['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿'];
+const EMOJIS=['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿','🐉','💀','🕊️','🌺','🎭'];
 let characters=[
-  {id:1,name:'Elena', role:'Protagonist · Mage',      desc:'Curious and gentle, hiding great power',  emoji:'🧙',color:'blue'},
-  {id:2,name:'Karl',  role:'Supporting · Ranger',      desc:'Few words, fierce loyalty beneath the blade',emoji:'🗡️',color:'purple'},
-  {id:3,name:'Lysa',  role:'Supporting · Oracle',      desc:'Sees fate but chooses to believe in change',emoji:'🔮',color:'teal'},
+  {id:'blue',   name:'Elena', role:'Protagonist · Mage',   personality:'Curious and gentle, hiding great power',  emoji:'🧙',color:'blue'},
+  {id:'purple', name:'Karl',  role:'Supporting · Ranger',  personality:'Few words, fierce loyalty beneath the blade',emoji:'🗡️',color:'purple'},
+  {id:'teal',   name:'Lysa',  role:'Supporting · Oracle',  personality:'Sees fate but chooses to believe in change',emoji:'🔮',color:'teal'},
 ];
-let nextId=4;
+let storyCharacters = []; // characters added mid-story
+let nextId = 4;
 
 function renderCharacters() {
-  const g=document.getElementById('characterGrid'); g.innerHTML='';
-  characters.forEach(c=>{
-    const d=document.createElement('div'); d.className='char-card'; d.dataset.color=c.color;
-    d.innerHTML=`<div class="char-header"><div class="char-emoji">${c.emoji}</div><div style="flex:1;min-width:0"><input class="char-name-input" value="${c.name}" placeholder="Name" oninput="updateChar(${c.id},'name',this.value)"/><input class="char-role-input" value="${c.role}" placeholder="Role" oninput="updateChar(${c.id},'role',this.value)"/></div></div><textarea class="char-desc-input" placeholder="Personality, background…" oninput="updateChar(${c.id},'desc',this.value)">${c.desc}</textarea><div class="char-footer"><div class="char-status"><div class="status-dot"></div>Standby</div><button class="btn-remove" onclick="removeChar(${c.id})">×</button></div>`;
+  _renderCharGrid('characterGrid', characters, false);
+  _renderStoryCharGrid();
+  updateStats();
+}
+
+function _renderCharGrid(gridId, chars, isStory) {
+  const g = document.getElementById(gridId); if (!g) return;
+  g.innerHTML = '';
+  chars.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'char-card'; d.dataset.color = c.color || 'blue';
+    const badgeHtml = isStory ? `<span class="story-char-badge">Story</span>` : '';
+    d.innerHTML = `
+      <div class="char-header">
+        <div class="char-emoji">${c.emoji||'🎭'}</div>
+        <div style="flex:1;min-width:0">
+          <input class="char-name-input" value="${c.name}" placeholder="Name"
+            oninput="updateCharField('${c.id}',${isStory},'name',this.value)"/>
+          <input class="char-role-input" value="${c.role||''}" placeholder="Role"
+            oninput="updateCharField('${c.id}',${isStory},'role',this.value)"/>
+        </div>
+        ${badgeHtml}
+      </div>
+      <textarea class="char-desc-input" placeholder="Personality, background…"
+        oninput="updateCharField('${c.id}',${isStory},'personality',this.value)">${c.personality||''}</textarea>
+      <div class="char-footer">
+        <div class="char-status"><div class="status-dot"></div>Standby</div>
+        <button class="btn-remove" onclick="removeChar('${c.id}',${isStory})">×</button>
+      </div>`;
     g.appendChild(d);
   });
-  const add=document.createElement('div'); add.className='add-char-card'; add.onclick=addChar;
-  add.innerHTML='<div class="add-char-icon">＋</div><span class="add-char-label">Add Character</span>'; g.appendChild(add);
-  document.getElementById('statBranches').textContent=Object.values(storyTree.nodes).filter(n=>n.parentId&&storyTree.nodes[n.parentId]?.children?.length>1).length;
+  if (!isStory) {
+    const add = document.createElement('div'); add.className = 'add-char-card'; add.onclick = addCoreChar;
+    add.innerHTML = '<div class="add-char-icon">＋</div><span class="add-char-label">Add Core Character</span>';
+    g.appendChild(add);
+  }
 }
-function updateChar(id,f,v){const c=characters.find(c=>c.id===id);if(c)c[f]=v;}
-function addChar(){const color=COLORS[characters.length%COLORS.length];const emoji=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];characters.push({id:nextId++,name:`Character ${nextId-1}`,role:'Undefined',desc:'',emoji,color});renderCharacters();showToast('Character added','success');}
-function removeChar(id){if(characters.length<=1){showToast('At least one character required','error');return;}characters=characters.filter(c=>c.id!==id);renderCharacters();showToast('Character removed','info');}
+
+function _renderStoryCharGrid() {
+  const sec = document.getElementById('storyCharSection');
+  if (!sec) return;
+  if (storyCharacters.length === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  _renderCharGrid('storyCharGrid', storyCharacters, true);
+}
+
+function updateCharField(id, isStory, field, val) {
+  const arr = isStory ? storyCharacters : characters;
+  const c = arr.find(c => c.id == id); if (c) c[field] = val;
+}
+function addCoreChar() {
+  const color = COLORS[characters.length % COLORS.length];
+  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+  const newId = 'c' + (nextId++);
+  characters.push({id:newId,name:`Character ${nextId-1}`,role:'Undefined',personality:'',emoji,color});
+  renderCharacters(); showToast('Character added','success');
+}
+function removeChar(id, isStory) {
+  if (!isStory && characters.length <= 1) { showToast('At least one core character required','error'); return; }
+  if (isStory) storyCharacters = storyCharacters.filter(c => c.id != id);
+  else characters = characters.filter(c => c.id != id);
+  renderCharacters(); showToast('Character removed','info');
+}
+
+/* Story Character modal */
+function openAddStoryChar() {
+  const o = document.getElementById('addStoryCharOverlay');
+  o.style.display = 'flex';
+  document.getElementById('scName').value = '';
+  document.getElementById('scRole').value = '';
+  document.getElementById('scPersonality').value = '';
+}
+function closeAddStoryChar() { document.getElementById('addStoryCharOverlay').style.display = 'none'; }
+async function submitAddStoryChar() {
+  const name = document.getElementById('scName').value.trim();
+  const role = document.getElementById('scRole').value.trim();
+  const personality = document.getElementById('scPersonality').value.trim();
+  if (!name || !personality) { showToast('Name and Personality are required','error'); return; }
+  const color = COLORS[storyCharacters.length % COLORS.length];
+  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+  const newChar = { id:'sc'+(nextId++), name, role, personality, emoji, color, is_story_character: true };
+  storyCharacters.push(newChar);
+  _renderStoryCharGrid();
+  // Notify backend if story is in progress
+  if (currentSessionId) {
+    try {
+      await fetch(`${API_BASE}/api/story/add-character`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ session_id: currentSessionId, character: { id:newChar.id, name, role, personality, color, is_story_character:true } })
+      });
+    } catch(e) { /* offline */ }
+  }
+  closeAddStoryChar();
+  showToast(`${name} joined the story!`, 'success');
+}
 
 /* ══════════════════════════════════════════
    Style chips + controls
@@ -1307,15 +1456,17 @@ async function startStory() {
   setProgress(0,'Building story world…');
   switchMainTab('story');
 
-  const chapterLengthHint={'brief':'Keep each chapter very short, around 300 words.','medium':'Keep each chapter around 700 words.','detailed':'Write rich, detailed chapters around 1500 words.'}[document.getElementById('chapterLength').value];
+  const chapterLengthHint = document.getElementById('chapterLength').value || 'medium';
   const tags=[...document.querySelectorAll('.chip.active')].map(c=>c.textContent.trim());
-  const charPayload=characters.map(c=>({id:c.color,name:c.name,personality:c.desc||'A mysterious character.',background:'',role:c.role,color:c.color}));
+  const charPayload=characters.map(c=>({id:c.id,name:c.name,personality:c.personality||'A mysterious character.',background:'',role:c.role,color:c.color}));
+  // Show "＋ Story Character" button once story starts
+  document.getElementById('addStoryCharBtn').style.display = '';
   const customSetting=document.getElementById('storySetting').value.trim();
   const notes=document.getElementById('directorNote').value.trim();
 
   try {
     setProgress(5,'Starting session…');
-    const res=await fetch(`${API_BASE}/api/story/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme,tags,characters:charPayload,custom_setting:customSetting+(notes?'\nDirector notes: '+notes:''),num_chapters:1,user_hint:chapterLengthHint})});
+    const res=await fetch(`${API_BASE}/api/story/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme,tags,characters:charPayload,custom_setting:customSetting+(notes?'\nDirector notes: '+notes:''),num_chapters:1,chapter_length_hint:chapterLengthHint})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`${res.status}`);}
     const sd=await res.json();
     currentSessionId=sd.session_id;
@@ -1349,11 +1500,24 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
     if(!chRes.ok){const e=await chRes.json().catch(()=>({}));throw new Error(e.error||`${chRes.status}`);}
 
     let chapterData=null;
+    let currentChapterNum = chapterCount + 1;
+    let chapterHeaderAdded = false;
+
     for await(const{eventType,data} of readSSE(chRes)){
       if(eventType==='progress'){
-        setProgress(15+Math.round(data.progress*0.7),data.message);
+        setProgress(15+Math.round((data.progress||0)*0.7), data.message||'');
+        // Update tension bar if tension info present
+        if(data.tension !== undefined) setTension(data.tension, data.scene_title||'');
       } else if(eventType==='log'){
         addLogMsg({sender:data.sender,cls:data.cls,text:data.text});
+      } else if(eventType==='scene'){
+        // Render scene prose as it streams in
+        if (!chapterHeaderAdded) {
+          appendChapterHeader(currentChapterNum, data.scene_title||'');
+          chapterHeaderAdded = true;
+        }
+        appendSceneBlock(data.scene_number, data.scene_title, data.prose, data.tension_level, data.is_decision_point);
+        setTension(data.tension_level||0, data.scene_title||'');
       } else if(eventType==='chapter'){
         chapterData=data;
       }
@@ -1362,22 +1526,21 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
     if(chapterData){
       const ch=chapterData.chapter;
       chapterCount++;
-      // Add node to tree
       const node=createNode(storyTree.currentId||null, chapterCount, ch.title, ch.prose, choiceTitle||null, currentSessionId);
-      // Append chapter to story panel
-      appendChapterBlock(ch.chapter_number, ch.title, ch.prose);
       totalWords+=ch.prose.split(/\s+/).filter(Boolean).length;
       updateStats();
       renderTreeSVG();
       setProgress(85,'Generating choices…');
-      // Generate branch choices
       await generateBranchChoices();
     }
 
     setProgress(100,'Done!');
-    setTimeout(()=>document.getElementById('progressWrap').classList.remove('visible'),600);
+    setTimeout(()=>{
+      document.getElementById('progressWrap').classList.remove('visible');
+      document.getElementById('tensionWrap').classList.remove('visible');
+    },1200);
     setCharStatus('done');
-    if(chapterCount===1) showToast('Chapter 1 ready — choose your path!','success');
+    if(chapterCount===1) showToast('Decision point reached — choose your path!','success');
 
   } catch(e){
     showToast('Error: '+e.message,'error');
@@ -1435,14 +1598,63 @@ async function selectBranch(idx, title, desc) {
 /* ══════════════════════════════════════════
    Helpers
 ══════════════════════════════════════════ */
-function appendChapterBlock(num, title, prose) {
+function appendChapterHeader(num, firstSceneTitle) {
   const panel=document.getElementById('storyPanel');
-  // Remove empty state
+  const empty=panel.querySelector('.story-empty'); if(empty) empty.remove();
+  // Create chapter container
+  const div=document.createElement('div'); div.className='chapter-block'; div.id=`chapter-${num}`;
+  div.innerHTML=`<div class="chapter-header"><span class="chapter-num">Chapter ${num}</span><span class="chapter-title" id="chTitle-${num}">${firstSceneTitle}</span></div><div id="scenes-${num}"></div>`;
+  panel.appendChild(div);
+  panel.scrollTop=panel.scrollHeight;
+}
+
+function appendSceneBlock(sceneNum, sceneTitle, prose, tensionLevel, isDecisionPoint) {
+  // Find the latest chapter's scene container
+  const allChapters = document.querySelectorAll('.chapter-block');
+  if (!allChapters.length) return;
+  const lastChapter = allChapters[allChapters.length-1];
+  const scenesEl = lastChapter.querySelector('[id^="scenes-"]');
+  if (!scenesEl) return;
+  const panel=document.getElementById('storyPanel');
+
+  const tClass = tensionLevel >= 0.72 ? 'high' : tensionLevel >= 0.45 ? 'mid' : 'low';
+  const tLabel = tensionLevel >= 0.72 ? `⚡ ${Math.round(tensionLevel*100)}% tension` : tensionLevel >= 0.45 ? `🔥 ${Math.round(tensionLevel*100)}%` : `☁ ${Math.round(tensionLevel*100)}%`;
+  const decisionTag = isDecisionPoint ? `<span style="background:rgba(240,98,146,0.12);color:var(--accent-rose);border:1px solid rgba(240,98,146,0.3);border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;letter-spacing:0.08em">DECISION POINT</span>` : '';
+
+  const div=document.createElement('div');
+  div.innerHTML=`
+    <div class="scene-divider">
+      <span>${sceneTitle}</span>
+      <span class="scene-tension-badge ${tClass}">${tLabel}</span>
+      ${decisionTag}
+    </div>
+    <div class="chapter-prose">${proseToHtml(prose)}</div>`;
+  scenesEl.appendChild(div);
+  panel.scrollTop=panel.scrollHeight;
+}
+
+function appendChapterBlock(num, title, prose) {
+  // Legacy: used for backtrack restore — renders a full chapter at once
+  const panel=document.getElementById('storyPanel');
   const empty=panel.querySelector('.story-empty'); if(empty) empty.remove();
   const div=document.createElement('div'); div.className='chapter-block';
   div.innerHTML=`<div class="chapter-header"><span class="chapter-num">Chapter ${num}</span><span class="chapter-title">${title}</span></div><div class="chapter-prose">${proseToHtml(prose)}</div>`;
   panel.appendChild(div);
   panel.scrollTop=panel.scrollHeight;
+}
+
+function setTension(level, label) {
+  const wrap = document.getElementById('tensionWrap');
+  const fill = document.getElementById('tensionFill');
+  const lbl  = document.getElementById('tensionLabel');
+  wrap.classList.add('visible');
+  const pct = Math.round(level * 100);
+  fill.style.width = pct + '%';
+  fill.style.background = level >= 0.72 ? 'linear-gradient(90deg,#f06292,#ff7043)'
+                        : level >= 0.45 ? 'linear-gradient(90deg,#e8c56d,#ff9800)'
+                        :                 'linear-gradient(90deg,#3ec9a7,#5b8dee)';
+  lbl.textContent = `Tension: ${pct}%`;
+  lbl.style.color = level >= 0.72 ? 'var(--accent-rose)' : level >= 0.45 ? 'var(--accent-gold)' : 'var(--accent-teal)';
 }
 
 function setCharStatus(state) {
@@ -1503,6 +1715,10 @@ function clearAll(){
   document.getElementById('statTime').textContent='—';
   document.getElementById('treeEmpty').style.display='flex';
   document.getElementById('treesvg').style.display='none';
+  document.getElementById('tensionWrap').classList.remove('visible');
+  document.getElementById('addStoryCharBtn').style.display='none';
+  storyCharacters=[];
+  _renderStoryCharGrid();
   resetGenerateBtn();
   showToast('Cleared','info');
 }

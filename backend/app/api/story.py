@@ -1,114 +1,122 @@
-"""Story API routes — the main story generation pipeline."""
+"""Story API — scene-by-scene generation pipeline with tension-based branching."""
 import json
 import uuid
 from flask import Blueprint, request, jsonify, Response, stream_with_context
+
 from app.services.world_builder import build_world
-from app.services.chapter_planner import plan_chapters
-from app.services.director_agent import direct_chapter
+from app.services.chapter_planner import plan_chapters, extend_story
+from app.services.director_agent import plan_scenes, gather_all_private_states, direct_scene
 from app.services.character_agent import generate_character_action
-from app.services.story_composer import compose_chapter
+from app.services.story_composer import compose_scene
 from app.services.safety_filter import check_safety
 from app.services.preset_manager import get_world_by_id, get_character_by_id
-from app.api.session import save_session
-from app.models.story import Story, Chapter
-from app.models.character import Character
+from app.api.session import save_session, get_session
+from app.models.story import Story, Chapter, Scene
 from app.utils.logger import get_logger
+from app.utils.llm_client import chat_json
 
 log = get_logger(__name__)
-
 story_bp = Blueprint("story", __name__)
 
-# In-memory story store
+# In-memory store
 _stories: dict[str, Story] = {}
+
+TENSION_THRESHOLD = 0.72   # scenes above this can become decision points
+
+
+# ═══════════════════════════════════════════════════
+# Helpers
+# ═══════════════════════════════════════════════════
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def _resolve_characters(char_data_list: list[dict]) -> list[dict]:
-    """Resolve characters from preset IDs or inline definitions."""
-    characters = []
+    result = []
     for cd in char_data_list:
-        preset_id = cd.get("preset_id")
-        if preset_id:
-            preset = get_character_by_id(preset_id)
+        if cd.get("preset_id"):
+            preset = get_character_by_id(cd["preset_id"])
             if preset:
-                characters.append(preset)
+                result.append(preset)
                 continue
-        characters.append(cd)
-    return characters
+        result.append(cd)
+    return result
 
 
-def _sse_event(event: str, data: dict) -> str:
-    """Format a Server-Sent Event."""
-    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+def _prev_prose(story: Story, max_chars: int = 800) -> str:
+    """Return recent prose context from the last 2 chapters."""
+    prose = ""
+    for ch in story.chapters[-2:]:
+        prose += f"\n--- 第{ch.chapter_number}章 ---\n{ch.prose[:max_chars // 2]}\n"
+    return prose
 
+
+# ═══════════════════════════════════════════════════
+# /start
+# ═══════════════════════════════════════════════════
 
 @story_bp.route("/start", methods=["POST"])
 def start_story():
     """Initialize a story session.
 
-    Request body:
-    {
-        "theme": "孤独与连接",
-        "tags": ["治愈", "现实"],
-        "characters": [{"name": "...", "personality": "..."}, ...],
-        "world_preset_id": "enchanted_forest" (optional),
-        "custom_setting": "" (optional),
-        "num_chapters": 3
-    }
+    Body: { theme, tags, characters, world_preset_id?, custom_setting?,
+            num_chapters?, chapter_length_hint?, tension_threshold? }
     """
     data = request.get_json() or {}
-    theme = data.get("theme", "")
+    theme = data.get("theme", "").strip()
     if not theme:
         return jsonify({"error": "theme is required"}), 400
 
     session_id = str(uuid.uuid4())[:12]
     tags = data.get("tags", [])
-    num_chapters = min(data.get("num_chapters", 3), 10)
+    num_chapters = min(data.get("num_chapters", 1), 20)
+    chapter_length_hint = data.get("chapter_length_hint", "medium")
+    tension_threshold = float(data.get("tension_threshold", TENSION_THRESHOLD))
     characters_input = data.get("characters", [])
 
-    # Resolve characters
-    characters = _resolve_characters(characters_input)
-    if not characters:
-        # Use 2 default characters if none provided
-        characters = [
-            get_character_by_id("healer"),
-            get_character_by_id("seeker"),
-        ]
+    core_characters = _resolve_characters(characters_input)
+    if not core_characters:
+        core_characters = [c for c in [get_character_by_id("healer"), get_character_by_id("seeker")] if c]
 
-    # Resolve world
     world_preset_id = data.get("world_preset_id")
     if world_preset_id:
-        world_config = get_world_by_id(world_preset_id)
-        if not world_config:
-            world_config = build_world(theme, tags=tags)
+        world_config = get_world_by_id(world_preset_id) or build_world(theme, tags=tags)
     else:
-        custom_setting = data.get("custom_setting", "")
-        world_config = build_world(theme, tags=tags, custom_setting=custom_setting)
+        world_config = build_world(
+            theme,
+            tags=tags,
+            custom_setting=data.get("custom_setting", "") +
+                           ("\nDirector notes: " + data.get("user_hint", "") if data.get("user_hint") else ""),
+        )
 
-    # Plan chapters
     chapter_plans = plan_chapters(
         world_config=world_config.get("setting", world_config),
-        characters=characters,
+        characters=core_characters,
         num_chapters=num_chapters,
         theme=theme,
+        chapter_length_hint=chapter_length_hint,
     )
 
-    # Create story
     story = Story(
         session_id=session_id,
         theme=theme,
         world_config=world_config,
         chapter_plans=chapter_plans,
+        core_characters=core_characters,
+        story_characters=[],
         status="initialized",
     )
     _stories[session_id] = story
 
-    # Save session
     save_session(session_id, {
         "id": session_id,
         "theme": theme,
-        "characters": characters,
+        "core_characters": core_characters,
+        "story_characters": [],
         "world_config": world_config,
-        "num_chapters": num_chapters,
+        "chapter_length_hint": chapter_length_hint,
+        "tension_threshold": tension_threshold,
         "status": "initialized",
     })
 
@@ -116,22 +124,21 @@ def start_story():
         "session_id": session_id,
         "world": world_config,
         "chapter_plans": [p.to_dict() for p in chapter_plans],
-        "characters": characters,
+        "core_characters": core_characters,
         "status": "initialized",
     })
 
 
+# ═══════════════════════════════════════════════════
+# /generate-chapter  (scene-by-scene pipeline)
+# ═══════════════════════════════════════════════════
+
 @story_bp.route("/generate-chapter", methods=["POST"])
 def generate_chapter():
-    """Generate the next chapter using the multi-agent pipeline.
+    """Generate the next story segment scene-by-scene.
 
-    Supports SSE streaming for real-time progress updates.
-
-    Request body:
-    {
-        "session_id": "abc123",
-        "user_input": "" (optional — user intervention/guidance)
-    }
+    Stops at a tension-based decision point and emits a `decision_point` SSE event.
+    Body: { session_id, user_input? }
     """
     data = request.get_json() or {}
     session_id = data.get("session_id", "")
@@ -141,270 +148,400 @@ def generate_chapter():
     if not story:
         return jsonify({"error": "Session not found. Call /api/story/start first."}), 404
 
-    from app.api.session import get_session
     session = get_session(session_id)
-    characters = session.get("characters", []) if session else []
+    chapter_length_hint = (session or {}).get("chapter_length_hint", "medium")
+    tension_threshold = float((session or {}).get("tension_threshold", TENSION_THRESHOLD))
 
     chapter_index = len(story.chapters)
+
+    # Auto-extend chapter plans when user provides a branch choice beyond initial plans
     if chapter_index >= len(story.chapter_plans):
-        return jsonify({"error": "All chapters have been generated.", "status": "completed"})
+        if user_input:
+            new_plan = extend_story(
+                world_config=story.world_config,
+                characters=story.all_characters,
+                previous_chapters=[c.to_dict() for c in story.chapters],
+                user_choice=user_input,
+                theme=story.theme,
+                next_chapter_number=chapter_index + 1,
+            )
+            story.chapter_plans.append(new_plan)
+        else:
+            return jsonify({"error": "All chapters generated. Provide user_input to continue.", "status": "completed"})
 
     plan = story.chapter_plans[chapter_index]
     accept = request.headers.get("Accept", "")
 
     if "text/event-stream" in accept:
         return Response(
-            stream_with_context(_generate_chapter_stream(
-                story, characters, plan, chapter_index, user_input
+            stream_with_context(_chapter_stream(
+                story, plan, chapter_index, user_input,
+                chapter_length_hint, tension_threshold,
             )),
             mimetype="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    # Non-streaming: run entire pipeline and return result
-    chapter = _run_chapter_pipeline(story, characters, plan, chapter_index, user_input)
+    # Non-streaming fallback
+    chapter = _run_chapter_pipeline(
+        story, plan, chapter_index, user_input, chapter_length_hint, tension_threshold
+    )
     return jsonify({
         "chapter": chapter.to_dict(),
         "chapter_number": chapter_index + 1,
-        "total_chapters": len(story.chapter_plans),
         "status": story.status,
+        "decision_point": chapter.decision_scene is not None,
     })
 
 
-def _generate_chapter_stream(story, characters, plan, chapter_index, user_input):
-    """Generator for SSE streaming of chapter generation."""
-    yield _sse_event("progress", {"step": "director", "message": "导演正在规划剧情...", "progress": 10})
+# ═══════════════════════════════════════════════════
+# Scene-by-scene SSE stream
+# ═══════════════════════════════════════════════════
 
-    # Step 1: Director
-    previous_chapters = [c.to_dict() for c in story.chapters]
-    directions = direct_chapter(
+def _chapter_stream(story, plan, chapter_index, user_input,
+                    chapter_length_hint, tension_threshold):
+    chapter_num = chapter_index + 1
+    all_chars = story.all_characters
+
+    yield _sse("progress", {"step": "planning", "message": "Director planning scenes…", "progress": 5})
+
+    # ── Plan scenes ──
+    scene_plans = plan_scenes(
         world_config=story.world_config,
-        characters=characters,
-        chapter_plan=plan.to_dict(),
-        previous_chapters=previous_chapters,
-        user_input=user_input,
+        characters=all_chars,
+        theme=story.theme,
+        chapter_number=chapter_num,
+        user_choice=user_input,
+        previous_context=_prev_prose(story),
+        tension_threshold=tension_threshold,
     )
 
-    yield _sse_event("log", {
-        "sender": "🎬 导演",
+    yield _sse("log", {
+        "sender": "🎬 Director",
         "cls": "director",
-        "text": directions.get("chapter_events", ""),
+        "text": f"Planned {len(scene_plans)} scenes · decision point at scene "
+                + str(next((p.scene_number for p in scene_plans if p.is_decision_point), "none")),
     })
-    yield _sse_event("progress", {"step": "characters", "message": "角色们正在行动...", "progress": 30})
 
-    # Step 2: Character agents
-    char_instructions = directions.get("character_instructions", {})
-    scene_setting = directions.get("scene_setting", "")
-    actions = []
-    public_actions = []
+    scenes_generated: list[Scene] = []
+    decision_scene_num = None
 
-    for i, char in enumerate(characters):
-        char_id = char.get("id", str(i))
-        instruction = char_instructions.get(char_id, {
-            "private_instruction": "自由发挥，展现你的角色特色。",
-            "emotional_goal": "展现真实的自我。",
-            "interaction_hints": "与他人交流。",
+    for scene_plan in scene_plans:
+        yield _sse("progress", {
+            "step": "scene",
+            "message": f"Scene {scene_plan.scene_number}: {scene_plan.title}…",
+            "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60),
+            "tension": scene_plan.tension_level,
+            "scene_number": scene_plan.scene_number,
+            "scene_title": scene_plan.title,
         })
 
-        action = generate_character_action(
-            character=char,
-            world_config=story.world_config,
-            director_instruction=instruction,
-            scene_setting=scene_setting,
-            other_characters_public=public_actions,
+        # Filter relevant characters for this scene
+        involved_ids = scene_plan.involved_characters
+        if involved_ids:
+            scene_chars = [c for c in all_chars if c["id"] in involved_ids]
+            if not scene_chars:
+                scene_chars = all_chars
+        else:
+            scene_chars = all_chars
+
+        # ── Phase 1: Director gathers private intel ──
+        yield _sse("log", {
+            "sender": "🔍 Director",
+            "cls": "director",
+            "text": f"Querying private states for scene {scene_plan.scene_number}…",
+        })
+
+        private_intel = gather_all_private_states(
+            characters=scene_chars,
+            scene_description=scene_plan.description,
+            story_context=_prev_prose(story, 400),
         )
-        actions.append(action)
-        public_actions.append({
-            "name": char["name"],
-            "public_action": action.public_action,
-            "dialogue": action.dialogue,
+
+        for char_id, intel in private_intel.items():
+            char_name = intel.get("name", char_id)
+            yield _sse("log", {
+                "sender": f"🔒 {char_name}",
+                "cls": f"char-{char_id}",
+                "text": f"[Private → Director] {intel.get('private_state', '')}",
+            })
+
+        # ── Phase 2: Director issues instructions ──
+        directions = direct_scene(
+            world_config=story.world_config,
+            characters=scene_chars,
+            scene_plan=scene_plan,
+            private_intel=private_intel,
+            previous_context=_prev_prose(story, 400),
+        )
+
+        yield _sse("log", {
+            "sender": "🎬 Director",
+            "cls": "director",
+            "text": directions.get("tension_driver", "Directions issued."),
         })
 
-        # Update character memory
-        char.setdefault("memory", []).append({
-            "chapter": chapter_index + 1,
-            "public_action": action.public_action,
-            "private_thought": action.private_thought,
+        # ── Character actions ──
+        actions = []
+        public_actions = []
+        char_instructions = directions.get("character_instructions", {})
+
+        for i, char in enumerate(scene_chars):
+            char_id = char.get("id", str(i))
+            instruction = char_instructions.get(char_id, {
+                "private_instruction": "自由发挥，展现你的角色特色。",
+                "emotional_goal": "展现真实的自我。",
+                "action_hint": "自然地互动。",
+                "interaction_target": "身边的人",
+            })
+
+            action = generate_character_action(
+                character=char,
+                world_config=story.world_config,
+                director_instruction=instruction,
+                scene_setting=directions.get("scene_setup", scene_plan.description),
+                other_characters_public=public_actions,
+                scene_tension=scene_plan.tension_level,
+            )
+            actions.append(action)
+            public_actions.append({
+                "name": char["name"],
+                "public_action": action.public_action,
+                "dialogue": action.dialogue,
+            })
+
+            char.setdefault("memory", []).append({
+                "chapter": chapter_num,
+                "scene": scene_plan.scene_number,
+                "public_action": action.public_action,
+                "private_thought": action.private_thought,
+            })
+
+            display_text = action.dialogue if action.dialogue else action.public_action
+            yield _sse("log", {
+                "sender": f"🎭 {char['name']}",
+                "cls": f"char-{char_id}",
+                "text": display_text,
+            })
+
+        # ── Compose scene prose ──
+        yield _sse("progress", {
+            "step": "composing",
+            "message": f"Writing scene {scene_plan.scene_number}…",
+            "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60) + 10,
+            "tension": scene_plan.tension_level,
         })
 
-        yield _sse_event("log", {
-            "sender": f"🎭 {char['name']}",
-            "cls": f"char-{char_id}",
-            "text": action.dialogue if action.dialogue else action.public_action,
+        prose = compose_scene(
+            scene_plan=scene_plan,
+            scene_setup=directions.get("scene_setup", ""),
+            atmosphere=directions.get("atmosphere", ""),
+            character_actions=actions,
+            world_config=story.world_config,
+            chapter_number=chapter_num,
+            therapeutic_intention=directions.get("therapeutic_intention", ""),
+            chapter_length_hint=chapter_length_hint,
+            is_decision_point=scene_plan.is_decision_point,
+        )
+
+        scene = Scene(
+            scene_number=scene_plan.scene_number,
+            title=scene_plan.title,
+            prose=prose,
+            tension_level=scene_plan.tension_level,
+            is_decision_point=scene_plan.is_decision_point,
+            character_actions=actions,
+        )
+        scenes_generated.append(scene)
+
+        # Emit scene prose
+        yield _sse("scene", {
+            "scene_number": scene_plan.scene_number,
+            "scene_title": scene_plan.title,
+            "prose": prose,
+            "tension_level": scene_plan.tension_level,
+            "is_decision_point": scene_plan.is_decision_point,
         })
 
-        pct = 30 + int((i + 1) / len(characters) * 30)
-        yield _sse_event("progress", {
-            "step": "characters",
-            "message": f"{char['name']}已行动",
-            "progress": pct,
-        })
+        # Stop at decision point
+        if scene_plan.is_decision_point:
+            decision_scene_num = scene_plan.scene_number
+            log.info("Decision point reached at scene %d (tension=%.2f)",
+                     scene_plan.scene_number, scene_plan.tension_level)
+            break
 
-    yield _sse_event("progress", {"step": "composing", "message": "正在整合叙事...", "progress": 70})
+    # ── Safety check on full chapter prose ──
+    yield _sse("progress", {"step": "safety", "message": "Safety check…", "progress": 88})
+    full_prose = "\n\n".join(s.prose for s in scenes_generated)
+    safety_result = check_safety(full_prose)
 
-    # Step 3: Compose
-    prose = compose_chapter(
-        chapter_plan=plan.to_dict(),
-        scene_setting=scene_setting,
-        character_actions=actions,
-        world_config=story.world_config,
-        chapter_number=chapter_index + 1,
-        therapeutic_intention=directions.get("therapeutic_intention", ""),
-    )
-
-    yield _sse_event("log", {
-        "sender": "📝 叙事者",
-        "cls": "composer",
-        "text": "故事已整合完成",
-    })
-    yield _sse_event("progress", {"step": "safety", "message": "安全审查中...", "progress": 85})
-
-    # Step 4: Safety filter
-    safety_result = check_safety(prose)
-
-    yield _sse_event("log", {
-        "sender": "🛡️ 安全审查 (watsonx.ai)",
+    yield _sse("log", {
+        "sender": "🛡 Safety",
         "cls": "safety",
-        "text": f"安全评分: {safety_result['safety_score']:.1f} | 治疗价值: {safety_result['therapeutic_score']:.1f}",
+        "text": f"Safety: {safety_result['safety_score']:.2f} · Therapeutic: {safety_result['therapeutic_score']:.2f}",
     })
 
-    # Build chapter
+    # ── Build chapter ──
     chapter = Chapter(
-        chapter_number=chapter_index + 1,
+        chapter_number=chapter_num,
         title=plan.title,
-        prose=prose,
-        character_actions=actions,
+        scenes=scenes_generated,
         safety_score=safety_result.get("safety_score", 1.0),
         therapeutic_notes=safety_result.get("recommendations", ""),
+        decision_scene=decision_scene_num,
     )
     story.chapters.append(chapter)
-    story.status = "completed" if len(story.chapters) >= len(story.chapter_plans) else "generating"
+    story.status = "awaiting_choice" if decision_scene_num else "generating"
 
-    yield _sse_event("progress", {"step": "done", "message": "生成完成！", "progress": 100})
-    yield _sse_event("chapter", {
+    yield _sse("progress", {"step": "done", "message": "Done!", "progress": 100})
+    yield _sse("chapter", {
         "chapter": chapter.to_dict(),
-        "chapter_number": chapter_index + 1,
-        "total_chapters": len(story.chapter_plans),
+        "chapter_number": chapter_num,
         "safety": safety_result,
         "status": story.status,
+        "decision_point": decision_scene_num is not None,
+        "scenes_generated": len(scenes_generated),
     })
 
 
-def _run_chapter_pipeline(story, characters, plan, chapter_index, user_input=""):
-    """Run the full chapter generation pipeline (non-streaming)."""
-    previous_chapters = [c.to_dict() for c in story.chapters]
+def _run_chapter_pipeline(story, plan, chapter_index, user_input,
+                           chapter_length_hint, tension_threshold):
+    """Non-streaming chapter generation."""
+    chapter_num = chapter_index + 1
+    all_chars = story.all_characters
 
-    # Step 1: Director
-    directions = direct_chapter(
+    scene_plans = plan_scenes(
         world_config=story.world_config,
-        characters=characters,
-        chapter_plan=plan.to_dict(),
-        previous_chapters=previous_chapters,
-        user_input=user_input,
+        characters=all_chars,
+        theme=story.theme,
+        chapter_number=chapter_num,
+        user_choice=user_input,
+        previous_context=_prev_prose(story),
+        tension_threshold=tension_threshold,
     )
 
-    # Step 2: Character agents
-    char_instructions = directions.get("character_instructions", {})
-    scene_setting = directions.get("scene_setting", "")
-    actions = []
-    public_actions = []
+    scenes_generated = []
+    decision_scene_num = None
 
-    for i, char in enumerate(characters):
-        char_id = char.get("id", str(i))
-        instruction = char_instructions.get(char_id, {
-            "private_instruction": "自由发挥。",
-            "emotional_goal": "展现真实的自我。",
-            "interaction_hints": "与他人交流。",
-        })
-
-        action = generate_character_action(
-            character=char,
-            world_config=story.world_config,
-            director_instruction=instruction,
-            scene_setting=scene_setting,
-            other_characters_public=public_actions,
+    for scene_plan in scene_plans:
+        private_intel = gather_all_private_states(
+            scene_chars := [c for c in all_chars if not scene_plan.involved_characters or c["id"] in scene_plan.involved_characters] or all_chars,
+            scene_plan.description,
+            _prev_prose(story, 400),
         )
-        actions.append(action)
-        public_actions.append({
-            "name": char["name"],
-            "public_action": action.public_action,
-            "dialogue": action.dialogue,
-        })
 
-        char.setdefault("memory", []).append({
-            "chapter": chapter_index + 1,
-            "public_action": action.public_action,
-            "private_thought": action.private_thought,
-        })
+        directions = direct_scene(
+            world_config=story.world_config,
+            characters=scene_chars,
+            scene_plan=scene_plan,
+            private_intel=private_intel,
+            previous_context=_prev_prose(story, 400),
+        )
 
-    # Step 3: Compose
-    prose = compose_chapter(
-        chapter_plan=plan.to_dict(),
-        scene_setting=scene_setting,
-        character_actions=actions,
-        world_config=story.world_config,
-        chapter_number=chapter_index + 1,
-        therapeutic_intention=directions.get("therapeutic_intention", ""),
-    )
+        actions = []
+        public_actions = []
+        for i, char in enumerate(scene_chars):
+            instruction = directions.get("character_instructions", {}).get(char["id"], {})
+            action = generate_character_action(
+                character=char,
+                world_config=story.world_config,
+                director_instruction=instruction,
+                scene_setting=directions.get("scene_setup", ""),
+                other_characters_public=public_actions,
+                scene_tension=scene_plan.tension_level,
+            )
+            actions.append(action)
+            public_actions.append({"name": char["name"], "public_action": action.public_action, "dialogue": action.dialogue})
+            char.setdefault("memory", []).append({"chapter": chapter_num, "scene": scene_plan.scene_number, "public_action": action.public_action, "private_thought": action.private_thought})
 
-    # Step 4: Safety filter
-    safety_result = check_safety(prose)
+        prose = compose_scene(
+            scene_plan=scene_plan,
+            scene_setup=directions.get("scene_setup", ""),
+            atmosphere=directions.get("atmosphere", ""),
+            character_actions=actions,
+            world_config=story.world_config,
+            chapter_number=chapter_num,
+            therapeutic_intention=directions.get("therapeutic_intention", ""),
+            chapter_length_hint=chapter_length_hint,
+            is_decision_point=scene_plan.is_decision_point,
+        )
+
+        scenes_generated.append(Scene(
+            scene_number=scene_plan.scene_number,
+            title=scene_plan.title,
+            prose=prose,
+            tension_level=scene_plan.tension_level,
+            is_decision_point=scene_plan.is_decision_point,
+            character_actions=actions,
+        ))
+
+        if scene_plan.is_decision_point:
+            decision_scene_num = scene_plan.scene_number
+            break
+
+    full_prose = "\n\n".join(s.prose for s in scenes_generated)
+    safety_result = check_safety(full_prose)
 
     chapter = Chapter(
-        chapter_number=chapter_index + 1,
+        chapter_number=chapter_num,
         title=plan.title,
-        prose=prose,
-        character_actions=actions,
+        scenes=scenes_generated,
         safety_score=safety_result.get("safety_score", 1.0),
         therapeutic_notes=safety_result.get("recommendations", ""),
+        decision_scene=decision_scene_num,
     )
     story.chapters.append(chapter)
-    story.status = "completed" if len(story.chapters) >= len(story.chapter_plans) else "generating"
-
+    story.status = "awaiting_choice" if decision_scene_num else "generating"
     return chapter
 
 
-@story_bp.route("/user-input", methods=["POST"])
-def user_input():
-    """Allow user to interact with the Director mid-story."""
+# ═══════════════════════════════════════════════════
+# /add-character  — introduce a new character mid-story
+# ═══════════════════════════════════════════════════
+
+@story_bp.route("/add-character", methods=["POST"])
+def add_character():
+    """Add a new story character mid-story.
+
+    Body: { session_id, character: { id, name, personality, background?, role?, color? } }
+    """
     data = request.get_json() or {}
     session_id = data.get("session_id", "")
-    message = data.get("message", "")
-
-    if not session_id or not message:
-        return jsonify({"error": "session_id and message are required"}), 400
+    char_data = data.get("character", {})
 
     story = _stories.get(session_id)
     if not story:
         return jsonify({"error": "Session not found"}), 404
+    if not char_data.get("name") or not char_data.get("personality"):
+        return jsonify({"error": "character.name and character.personality are required"}), 400
 
+    char_data.setdefault("id", str(uuid.uuid4())[:8])
+    char_data["is_story_character"] = True
+
+    story.story_characters.append(char_data)
+
+    session = get_session(session_id)
+    if session:
+        session.setdefault("story_characters", []).append(char_data)
+        save_session(session_id, session)
+
+    log.info("New story character '%s' added to session %s", char_data["name"], session_id)
     return jsonify({
-        "status": "accepted",
-        "message": "Your input will be considered in the next chapter generation.",
-        "session_id": session_id,
+        "status": "ok",
+        "character": char_data,
+        "total_characters": len(story.all_characters),
     })
 
 
-@story_bp.route("/status/<session_id>", methods=["GET"])
-def get_status(session_id: str):
-    """Get story generation status."""
-    story = _stories.get(session_id)
-    if not story:
-        return jsonify({"error": "Session not found"}), 404
-
-    return jsonify({
-        "session_id": session_id,
-        "status": story.status,
-        "chapters_generated": len(story.chapters),
-        "total_chapters": len(story.chapter_plans),
-    })
-
+# ═══════════════════════════════════════════════════
+# /generate-choices
+# ═══════════════════════════════════════════════════
 
 @story_bp.route("/generate-choices", methods=["POST"])
 def generate_choices():
-    """Generate 3 branch choices for the next chapter.
+    """Generate 3 branch choices after a decision point.
 
-    Request body: { "session_id": "...", "num_choices": 3 }
+    Body: { session_id, num_choices? }
     """
     data = request.get_json() or {}
     session_id = data.get("session_id", "")
@@ -416,93 +553,130 @@ def generate_choices():
     if not story.chapters:
         return jsonify({"error": "No chapters generated yet"}), 400
 
-    last = story.chapters[-1]
-    world_desc = story.world_config.get("description", "") or str(story.world_config)[:200]
-    char_names = ", ".join(c.get("name", "") for c in _get_session_characters(session_id))
+    last_ch = story.chapters[-1]
+    decision_scene = next(
+        (s for s in reversed(last_ch.scenes) if s.is_decision_point), None
+    )
+    last_prose = decision_scene.prose if decision_scene else last_ch.prose
+    world_desc = story.world_config.get("description", "")[:200]
+    char_names = ", ".join(c.get("name", "") for c in story.all_characters)
+    core_tensions = ", ".join(
+        f"{c['name']}({c.get('emotional_state', '')})"
+        for s in last_ch.scenes
+        for c in (a.__dict__ for a in s.character_actions)
+        if c.get("emotional_state")
+    )
 
-    from app.utils.llm_client import chat_json
     prompt = (
         f"Story theme: {story.theme}\n"
         f"World: {world_desc}\n"
-        f"Characters: {char_names}\n\n"
-        f"Last chapter excerpt:\n{last.prose[:600]}\n\n"
-        f"Generate {num_choices} meaningfully distinct choices for what could happen next. "
-        "Each choice should lead the story in a different emotional or narrative direction.\n"
-        f'Return JSON: {{"choices": [{{"id": "A", "title": "short dramatic title (≤6 words)", '
-        '"description": "2 sentences describing what happens"}}]}}'
+        f"Characters: {char_names}\n"
+        + (f"Current tensions: {core_tensions}\n" if core_tensions else "")
+        + f"\nDecision point excerpt (last ~500 chars):\n{last_prose[-500:]}\n\n"
+        f"Generate {num_choices} meaningfully distinct choices for what happens next.\n"
+        "Each choice should lead the story in a different emotional direction — "
+        "vary the tone: e.g. confrontation, escape, revelation, sacrifice, unexpected connection.\n"
+        f'Return JSON: {{"choices": [{{"id": "A", "title": "≤6-word dramatic title", '
+        '"description": "2 sentences of what happens and how it feels"}}]}}'
     )
+
     try:
         result = chat_json([{"role": "user", "content": prompt}], temperature=0.95)
-        import json as _json
-        parsed = _json.loads(result)
+        parsed = json.loads(result)
         return jsonify(parsed)
     except Exception as e:
         log.error("generate_choices error: %s", e)
         return jsonify({"error": str(e)}), 500
 
 
-def _get_session_characters(session_id: str) -> list[dict]:
-    from app.api.session import get_session
-    session = get_session(session_id)
-    return session.get("characters", []) if session else []
-
+# ═══════════════════════════════════════════════════
+# /suggest
+# ═══════════════════════════════════════════════════
 
 @story_bp.route("/suggest", methods=["POST"])
 def suggest():
-    """Generate AI suggestions for story title, theme, or world keywords.
+    """AI suggestions for title / theme / world keywords.
 
-    Request body: { "type": "title"|"theme"|"keywords", "context": "..." }
+    Body: { type: "title"|"theme"|"keywords", context: "..." }
     """
     data = request.get_json() or {}
     suggest_type = data.get("type", "title")
     context = data.get("context", "")
 
-    from app.utils.llm_client import chat_json
-    if suggest_type == "title":
-        prompt = (
+    prompts = {
+        "title": (
             f"Context: {context}\n"
-            "Generate 5 evocative story titles (2-6 words each). "
-            'Return JSON: {"suggestions": ["title1", "title2", ...]}'
-        )
-    elif suggest_type == "theme":
-        prompt = (
+            "Generate 5 evocative story titles (2–6 words each). "
+            'Return JSON: {"suggestions": ["title1", ...]}'
+        ),
+        "theme": (
             f"Context: {context}\n"
-            "Generate 5 compelling story themes or central conflicts (one sentence each). "
-            'Return JSON: {"suggestions": ["theme1", "theme2", ...]}'
-        )
-    else:  # keywords
-        prompt = (
+            "Generate 5 compelling story themes or central emotional conflicts (one sentence each). "
+            'Return JSON: {"suggestions": ["theme1", ...]}'
+        ),
+        "keywords": (
             f"Story concept: {context}\n"
             "Generate world-building keywords in 4 categories. "
             'Return JSON: {"categories": [{"name": "Environment", "words": [...]}, '
             '{"name": "Atmosphere", "words": [...]}, '
             '{"name": "Era / Tech", "words": [...]}, '
             '{"name": "Special Elements", "words": [...]}]}'
-        )
+        ),
+    }
 
     try:
-        import json as _json
-        result = chat_json([{"role": "user", "content": prompt}], temperature=0.9)
-        return jsonify(_json.loads(result))
+        result = chat_json([{"role": "user", "content": prompts.get(suggest_type, prompts["title"])}], temperature=0.9)
+        return jsonify(json.loads(result))
     except Exception as e:
         log.error("suggest error: %s", e)
         return jsonify({"error": str(e)}), 500
 
 
+# ═══════════════════════════════════════════════════
+# Misc routes
+# ═══════════════════════════════════════════════════
+
+@story_bp.route("/status/<session_id>", methods=["GET"])
+def get_status(session_id: str):
+    story = _stories.get(session_id)
+    if not story:
+        return jsonify({"error": "Session not found"}), 404
+    return jsonify({
+        "session_id": session_id,
+        "status": story.status,
+        "chapters_generated": len(story.chapters),
+        "total_planned": len(story.chapter_plans),
+        "core_characters": len(story.core_characters),
+        "story_characters": len(story.story_characters),
+    })
+
+
+@story_bp.route("/user-input", methods=["POST"])
+def user_input():
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    if not session_id:
+        return jsonify({"error": "session_id required"}), 400
+    if not _stories.get(session_id):
+        return jsonify({"error": "Session not found"}), 404
+    return jsonify({"status": "accepted", "session_id": session_id})
+
+
 @story_bp.route("/export/<session_id>", methods=["GET"])
 def export_story(session_id: str):
-    """Export the complete story."""
     story = _stories.get(session_id)
     if not story:
         return jsonify({"error": "Session not found"}), 404
 
     fmt = request.args.get("format", "json")
-
     if fmt == "text":
         text = f"# {story.theme}\n\n"
         for ch in story.chapters:
-            text += f"## 第{ch.chapter_number}章: {ch.title}\n\n"
-            text += ch.prose + "\n\n"
+            text += f"## Chapter {ch.chapter_number}: {ch.title}\n\n"
+            for s in ch.scenes:
+                if len(ch.scenes) > 1:
+                    text += f"### {s.title}\n\n"
+                text += s.prose + "\n\n"
         return Response(text, mimetype="text/plain; charset=utf-8")
 
     return jsonify(story.to_dict())
