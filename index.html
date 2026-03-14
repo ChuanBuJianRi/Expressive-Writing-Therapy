@@ -326,9 +326,8 @@
     .rel-label-badge:hover { background: rgba(91,141,238,0.12); }
     /* Relationship modal (floats inside network canvas) */
     .rel-popup {
-      position: absolute; z-index: 200; background: var(--bg-card);
-      border: 1px solid var(--border-light); border-radius: 13px;
-      padding: 16px 18px; min-width: 230px; max-width: 270px;
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: 13px; padding: 16px 18px; width: 262px;
       box-shadow: 0 14px 40px rgba(0,0,0,0.55); animation: fadeIn 0.15s ease;
     }
     .rel-popup-title { font-size: 12px; font-weight: 800; margin-bottom: 12px; color: var(--text-primary); }
@@ -1965,10 +1964,14 @@ function _showRelPopup(canvas, fromId, toId, title, existingRel) {
   const p1 = nodePositions[String(fromId)] || { x:100, y:100 };
   const p2 = nodePositions[String(toId)]   || { x:200, y:200 };
   const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
-  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
-  const pw = 250, ph = 180;
-  const px = Math.min(Math.max(mx - pw/2, 8), cw - pw - 8);
-  const py = Math.min(Math.max(my - ph/2, 8), ch - ph - 8);
+
+  // Convert canvas-local coords to viewport coords (avoids overflow:hidden clipping)
+  const rect = canvas.getBoundingClientRect();
+  const vpx = rect.left + mx;
+  const vpy = rect.top  + my;
+  const pw = 262, ph = 220;
+  const fx = Math.min(Math.max(vpx - pw/2, 8), window.innerWidth  - pw - 8);
+  const fy = Math.min(Math.max(vpy - ph/2, 8), window.innerHeight - ph - 8);
 
   const fromChar = _getChar(fromId), toChar = _getChar(toId);
   const fName = fromChar?.name || '?', tName = toChar?.name || '?';
@@ -1978,8 +1981,8 @@ function _showRelPopup(canvas, fromId, toId, title, existingRel) {
   const popup = document.createElement('div');
   popup.className = 'rel-popup';
   popup.id = 'relPopup';
-  popup.style.left = px + 'px';
-  popup.style.top  = py + 'px';
+  // Fixed positioning so it's never clipped by any parent overflow
+  popup.style.cssText = `position:fixed;left:${fx}px;top:${fy}px;z-index:2000`;
   popup.innerHTML = `
     <div class="rel-popup-title">${title}</div>
     <label class="field-label" style="display:block;margin-bottom:4px">Relationship</label>
@@ -1998,8 +2001,19 @@ function _showRelPopup(canvas, fromId, toId, title, existingRel) {
       </button>
     </div>
   `;
-  canvas.appendChild(popup);
+  // Append to body so it's never clipped by canvas overflow:hidden
+  document.body.appendChild(popup);
   setTimeout(() => document.getElementById('relLabelInput')?.focus(), 50);
+
+  // Close when clicking outside the popup
+  setTimeout(() => {
+    document.addEventListener('mousedown', function _outsideClose(e) {
+      if (!document.getElementById('relPopup')?.contains(e.target)) {
+        closeRelPopup();
+        document.removeEventListener('mousedown', _outsideClose);
+      }
+    });
+  }, 150);
 }
 
 function _setRelDir(btn, dir) {
