@@ -275,78 +275,71 @@
       color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.3);
       border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
     }
-    /* ── Chapter Cast Float ── */
-    #castFloat {
-      position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
-      width: 230px; min-width: 160px; min-height: 90px;
-      background: var(--bg-card); border: 1px solid var(--border-light);
-      border-radius: 13px; box-shadow: 0 12px 40px rgba(0,0,0,0.55);
-      z-index: 850; display: flex; flex-direction: column; overflow: hidden;
+    /* ── Chapter Cast Strip (right column) ── */
+    .cast-strip {
+      width: 172px; flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      background: var(--bg-card);
+      display: flex; flex-direction: column; overflow: hidden;
     }
-    #castFloat.minimized #castFloatBody { display: none; }
-    #castFloat.minimized { min-height: 0; }
-    #castFloatHead {
+    .cast-strip-head {
+      padding: 9px 11px 7px; font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card2); flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px;
+      color: var(--text-muted);
+    }
+    .cast-strip-body {
+      flex: 1; overflow-y: auto; padding: 8px 8px 12px;
+    }
+    .cast-strip-body::-webkit-scrollbar { width: 3px; }
+    .cast-strip-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .cast-chap-sec {
+      margin-bottom: 8px; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .cast-chap-sec.active { border-color: rgba(91,141,238,0.5); }
+    .cast-chap-label {
+      font-size: 9.5px; font-weight: 700; padding: 4px 8px;
+      background: var(--bg-card2); color: var(--text-muted);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 10px; cursor: grab; background: var(--bg-card2);
-      border-bottom: 1px solid var(--border); user-select: none;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .cast-chap-sec.active .cast-chap-label { color: var(--accent-gold); background: rgba(232,197,109,0.07); }
+    .cast-drop {
+      min-height: 44px; padding: 5px; display: flex; flex-wrap: wrap;
+      gap: 4px; align-content: flex-start;
+    }
+    .cast-drop.drag-over { background: rgba(91,141,238,0.08); }
+    .cast-drop-hint {
+      font-size: 9.5px; color: var(--text-muted); width: 100%;
+      text-align: center; padding: 6px 0; pointer-events: none; line-height: 1.5;
+    }
+    .cast-bubble {
+      display: flex; align-items: center; gap: 3px;
+      background: var(--bg-card2); border: 1px solid var(--border-light);
+      border-radius: 20px; padding: 2px 5px 2px 2px;
+      font-size: 10px; font-weight: 600; cursor: default;
+      animation: fadeIn 0.12s ease; max-width: 100%;
+    }
+    .cast-bubble-av {
+      width: 18px; height: 18px; border-radius: 50%; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: 10px;
       flex-shrink: 0;
     }
-    #castFloatHead:active { cursor: grabbing; }
-    #castFloatTitle { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; display: flex; align-items: center; gap: 5px; }
-    #castChapLabel { font-size: 10px; color: var(--accent-gold); font-weight: 600; }
-    .cast-head-btn {
-      background: none; border: none; cursor: pointer; color: var(--text-muted);
-      font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+    .cast-bubble-av img { width: 100%; height: 100%; object-fit: cover; }
+    .cast-bubble-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 72px; }
+    .cast-bubble-rm {
+      font-size: 12px; line-height: 1; cursor: pointer;
+      color: var(--text-muted); padding: 0 1px; flex-shrink: 0;
     }
-    .cast-head-btn:hover { color: var(--text-primary); background: var(--bg-card); }
-    #castFloatBody {
-      padding: 8px; flex: 1; overflow-y: auto; min-height: 60px;
-    }
-    .pool-drop-zone {
-      min-height: 54px; border: 2px dashed var(--border); border-radius: 9px;
-      padding: 6px 7px; display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-start;
-      transition: border-color 0.15s, background 0.15s; align-content: flex-start;
-    }
-    .pool-drop-zone.drag-over { border-color: var(--accent-blue); background: rgba(91,141,238,0.07); }
-    .pool-empty-hint {
-      font-size: 10.5px; color: var(--text-muted); width: 100%; text-align: center;
-      pointer-events: none; padding: 6px 0; line-height: 1.5;
-    }
-    .pool-bubble {
-      display: flex; align-items: center; gap: 4px;
-      background: var(--bg-card2); border: 1px solid var(--border-light);
-      border-radius: 20px; padding: 2px 6px 2px 3px;
-      font-size: 11px; font-weight: 600; cursor: default;
-      animation: fadeIn 0.12s ease;
-    }
-    .pool-bubble-av {
-      width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; font-size: 11px;
-    }
-    .pool-bubble-av img { width: 100%; height: 100%; object-fit: cover; }
-    .pool-bubble-rm {
-      font-size: 13px; line-height: 1; cursor: pointer; color: var(--text-muted);
-      margin-left: 1px;
-    }
-    .pool-bubble-rm:hover { color: var(--accent-rose); }
-    .pool-hint-footer {
+    .cast-bubble-rm:hover { color: var(--accent-rose); }
+    .cast-strip-empty {
       font-size: 10px; color: var(--text-muted); text-align: center;
-      padding-top: 6px; border-top: 1px solid var(--border);
-      margin-top: 6px;
+      padding: 16px 8px; line-height: 1.6;
     }
-    /* Resize grip */
-    #castResizeGrip {
-      position: absolute; bottom: 0; right: 0; width: 16px; height: 16px;
-      cursor: se-resize; z-index: 2;
-    }
-    #castResizeGrip::after {
-      content: ''; position: absolute; bottom: 3px; right: 3px;
-      width: 7px; height: 7px;
-      border-right: 2px solid var(--border-light);
-      border-bottom: 2px solid var(--border-light);
-      border-radius: 1px;
-    }
-    /* Card highlight when in pool */
+    /* Card highlight when in cast */
     .char-card.in-pool { box-shadow: 0 0 0 2px var(--accent-blue) inset; }
     .char-card[draggable=true] { cursor: grab; }
     .char-card.dragging { opacity: 0.4; transform: scale(0.97); }
@@ -1264,6 +1257,17 @@
 
   </div><!-- /right-panel -->
 
+  <!-- ── Chapter Cast Strip ── -->
+  <div class="cast-strip" id="castStrip">
+    <div class="cast-strip-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Chapter Cast
+    </div>
+    <div class="cast-strip-body" id="castStripBody">
+      <div class="cast-strip-empty" id="castStripEmpty">Start a story to build your chapter casts</div>
+    </div>
+  </div>
+
   </div><!-- /top-area -->
 
   <!-- ── Horizontal Resize Handle ── -->
@@ -1326,30 +1330,6 @@
         <button class="btn btn-primary" style="flex:2" id="avatarApplyBtn" disabled onclick="applyAvatar()">Apply Selected</button>
       </div>
     </div>
-  </div>
-
-  <!-- ── Chapter Cast Float ── -->
-  <div id="castFloat">
-    <div id="castFloatHead">
-      <div id="castFloatTitle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        CAST &nbsp;<span id="castChapLabel"></span>
-      </div>
-      <div style="display:flex;gap:2px;align-items:center">
-        <button class="cast-head-btn" onclick="clearPool()" title="Clear cast">⊘</button>
-        <button class="cast-head-btn" id="castMinBtn" onclick="toggleCastFloat()" title="Minimize">−</button>
-      </div>
-    </div>
-    <div id="castFloatBody">
-      <div class="pool-drop-zone" id="poolDropZone"
-        ondragover="onPoolDragOver(event)"
-        ondragleave="onPoolDragLeave(event)"
-        ondrop="onPoolDrop(event)">
-        <div class="pool-empty-hint" id="poolEmptyHint">Drag characters<br/>into this chapter's cast</div>
-      </div>
-      <div class="pool-hint-footer">Drag from bottom panel · Empty = all chars</div>
-    </div>
-    <div id="castResizeGrip"></div>
   </div>
 
   <!-- Reset All Confirmation -->
@@ -1496,7 +1476,8 @@ let characters=[
 ];
 let storyCharacters = []; // characters added mid-story
 let nextId = 4;
-let characterPool = []; // IDs of chars participating in the current chapter
+let chapterCasts = {};   // { chapterNum: [charId, ...] }
+let activeCastChap = 0;  // chapter currently awaiting cast drag
 
 function renderCharacters() {
   _renderCharGrid('characterGrid', characters, false);
@@ -2349,11 +2330,31 @@ function getCurrentPath() {
   return path;
 }
 
-function restoreToNode(nodeId) {
+async function restoreToNode(nodeId) {
   const node = storyTree.nodes[nodeId]; if(!node) return;
+  if (node.id === storyTree.currentId) return; // already here
+  if (isGenerating) { showToast('Please wait for generation to finish','error'); return; }
+
+  // Confirm backtrack
+  if (!confirm(`Backtrack to Chapter ${node.chapterNum}: "${node.title}"?\n\nAll chapters after this point will be removed from the current path (other branches in the tree are preserved).`)) return;
+
+  // Tell backend to truncate story to this chapter
+  try {
+    const r = await fetch(`${API_BASE}/api/story/backtrack`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: node.sessionId, chapter_number: node.chapterNum })
+    });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || r.status);
+  } catch(e) {
+    showToast('Backtrack failed: ' + e.message, 'error'); return;
+  }
+
+  // Update frontend state
   storyTree.currentId = nodeId;
   currentSessionId = node.sessionId;
-  // Rebuild story panel with path prose
+  chapterCount = node.chapterNum;
+
+  // Rebuild prose up to this node
   const path = getCurrentPath();
   const storyPanel = document.getElementById('storyPanel');
   storyPanel.innerHTML = path.map(nid=>{
@@ -2366,13 +2367,25 @@ function restoreToNode(nodeId) {
       <div class="chapter-prose">${proseToHtml(n.prose)}</div>
     </div>`;
   }).join('');
-  // Show choices if this node has unexplored children suggestions (or allow regenerating)
+
+  // Restore cast strip up to this chapter (remove sections beyond it)
+  const body = document.getElementById('castStripBody');
+  if (body) {
+    body.querySelectorAll('.cast-chap-sec').forEach(sec => {
+      const secChap = parseInt(sec.id.replace('castSec-',''));
+      if (secChap > node.chapterNum) sec.remove();
+      else sec.classList.remove('active');
+    });
+  }
+
   document.getElementById('branchSection').style.display='none';
   switchMainTab('story');
   renderTreeSVG();
-  showToast(`Restored to Chapter ${node.chapterNum}: ${node.title}`,'info');
-  // Update stats
+  showToast(`↩ Backtracked to Chapter ${node.chapterNum}: ${node.title}`,'info');
   updateStats();
+
+  // Re-generate branch choices for this decision point
+  await generateBranchChoices();
 }
 
 /* ══════════════════════════════════════════
@@ -2986,7 +2999,6 @@ async function startStory() {
     addLogMsg({sender:'🌍 World Builder',cls:'director',text:sd.world?.description||sd.world?.setting?.atmosphere||'World initialized'});
     initWorldMap(sd.world);
     setProgress(10,'Generating Chapter 1…');
-    setCastChapLabel(1);
     await generateNextChapter(null, null);
   } catch(e){
     showToast('Error: '+e.message,'error');
@@ -3006,15 +3018,15 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
   document.getElementById('progressWrap').classList.add('visible');
   const userInput=choiceDesc||'';
 
-  // Update cast float label and clear for the new chapter
+  // Open a new cast section for this chapter
   const nextChap = chapterCount + 1;
-  setCastChapLabel(nextChap);
-  clearPool();
+  initCastSection(nextChap);
 
   setProgress(15,'Director planning…');
 
   try {
-    const poolPayload = characterPool.length > 0 ? characterPool : null;
+    const cast = getCast(chapterCount + 1);
+    const poolPayload = cast.length > 0 ? cast : null;
     const chRes=await fetch(`${API_BASE}/api/story/generate-chapter`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({session_id:currentSessionId,user_input:userInput,character_pool:poolPayload})});
     if(!chRes.ok){const e=await chRes.json().catch(()=>({}));throw new Error(e.error||`${chRes.status}`);}
 
@@ -3261,9 +3273,13 @@ function clearAll(){
   document.getElementById('addStoryCharBtn').style.display='none';
   storyCharacters=[];
   _renderStoryCharGrid();
-  // Reset pool
-  characterPool=[];
-  renderPool();
+  // Reset chapter cast strip
+  chapterCasts={}; activeCastChap=0;
+  const castBody = document.getElementById('castStripBody');
+  if (castBody) {
+    castBody.innerHTML = '<div class="cast-strip-empty" id="castStripEmpty">Start a story to build your chapter casts</div>';
+  }
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('in-pool'));
   // Reset network
   relationships=[]; nodePositions={}; selectedNetNode=null; closeRelPopup();
   const canvas=document.getElementById('networkCanvas');
@@ -3289,144 +3305,117 @@ renderCharacters();
 initSetup();
 
 /* ══════════════════════════════════════════
-   CHAPTER CAST FLOAT — drag & resize
-══════════════════════════════════════════ */
-(function initCastFloat() {
-  const fl = document.getElementById('castFloat');
-  const head = document.getElementById('castFloatHead');
-  const grip = document.getElementById('castResizeGrip');
-  if (!fl || !head || !grip) return;
-
-  // Initialise position: right-center
-  const initRect = () => {
-    fl.style.transform = 'none';
-    fl.style.right = 'auto';
-    fl.style.left = (window.innerWidth - fl.offsetWidth - 24) + 'px';
-    fl.style.top  = Math.round((window.innerHeight - fl.offsetHeight) / 2) + 'px';
-  };
-  // Delay so layout is settled
-  setTimeout(initRect, 0);
-
-  // ── Drag to move ──
-  let drag = null;
-  head.addEventListener('mousedown', e => {
-    if (e.target.tagName === 'BUTTON') return;
-    const r = fl.getBoundingClientRect();
-    drag = { sx: e.clientX, sy: e.clientY, ol: r.left, ot: r.top };
-    fl.style.transform = 'none';
-    fl.style.right = 'auto';
-    fl.style.left = r.left + 'px';
-    fl.style.top  = r.top + 'px';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', e => {
-    if (!drag) return;
-    fl.style.left = (drag.ol + e.clientX - drag.sx) + 'px';
-    fl.style.top  = (drag.ot + e.clientY - drag.sy) + 'px';
-  });
-  document.addEventListener('mouseup', () => { drag = null; });
-
-  // ── Resize grip ──
-  let rsz = null;
-  grip.addEventListener('mousedown', e => {
-    const r = fl.getBoundingClientRect();
-    rsz = { sx: e.clientX, sy: e.clientY, ow: r.width, oh: r.height };
-    e.preventDefault(); e.stopPropagation();
-  });
-  document.addEventListener('mousemove', e => {
-    if (!rsz) return;
-    const nw = Math.max(160, rsz.ow + e.clientX - rsz.sx);
-    const nh = Math.max(80,  rsz.oh + e.clientY - rsz.sy);
-    fl.style.width  = nw + 'px';
-    fl.style.height = nh + 'px';
-  });
-  document.addEventListener('mouseup', () => { rsz = null; });
-})();
-
-function toggleCastFloat() {
-  const fl = document.getElementById('castFloat');
-  const btn = document.getElementById('castMinBtn');
-  if (!fl) return;
-  fl.classList.toggle('minimized');
-  btn.textContent = fl.classList.contains('minimized') ? '+' : '−';
-}
-
-function setCastChapLabel(n) {
-  const el = document.getElementById('castChapLabel');
-  if (el) el.textContent = n ? `Ch.${n}` : '';
-}
-
-/* ══════════════════════════════════════════
-   CHAPTER CAST POOL
+   CHAPTER CAST STRIP  (per-chapter, right column)
 ══════════════════════════════════════════ */
 
-function allCharsFlat() {
-  return [...characters, ...storyCharacters];
+function allCharsFlat() { return [...characters, ...storyCharacters]; }
+
+// ── Build a bubble element for a character in the cast ──
+function _castBubble(c, chap) {
+  const b = document.createElement('div');
+  b.className = 'cast-bubble';
+  const bg = {blue:'rgba(91,141,238,0.18)',purple:'rgba(155,109,255,0.18)',teal:'rgba(62,201,167,0.18)',rose:'rgba(240,98,146,0.18)'}[c.color||'blue']||'rgba(91,141,238,0.18)';
+  const av = c.avatar ? `<img src="${c.avatar}" alt="${c.name}"/>` : (c.emoji||'🎭');
+  b.innerHTML = `<div class="cast-bubble-av" style="background:${bg}">${av}</div>`
+    + `<span class="cast-bubble-name">${c.name}</span>`
+    + `<span class="cast-bubble-rm" title="Remove" onclick="removeFromCast(${chap},'${c.id}')">×</span>`;
+  return b;
 }
 
-function renderPool() {
-  const zone = document.getElementById('poolDropZone');
-  const hint = document.getElementById('poolEmptyHint');
-  if (!zone) return;
-  // Remove old bubbles (not the hint div)
-  [...zone.querySelectorAll('.pool-bubble')].forEach(b => b.remove());
-  if (characterPool.length === 0) {
-    hint && (hint.style.display = 'block');
+// ── Render one chapter section in the strip ──
+function renderCastSection(chap) {
+  const sec = document.getElementById(`castSec-${chap}`);
+  if (!sec) return;
+  const drop = sec.querySelector('.cast-drop');
+  [...drop.querySelectorAll('.cast-bubble')].forEach(b => b.remove());
+  const hint = drop.querySelector('.cast-drop-hint');
+  const ids = chapterCasts[chap] || [];
+  if (ids.length === 0) {
+    hint && (hint.style.display = '');
   } else {
     hint && (hint.style.display = 'none');
     const all = allCharsFlat();
-    characterPool.forEach(id => {
+    ids.forEach(id => {
       const c = all.find(x => x.id == id);
-      if (!c) return;
-      const b = document.createElement('div');
-      b.className = 'pool-bubble';
-      const colorBg = {blue:'rgba(91,141,238,0.18)',purple:'rgba(155,109,255,0.18)',teal:'rgba(62,201,167,0.18)',rose:'rgba(240,98,146,0.18)'}[c.color||'blue']||'rgba(91,141,238,0.18)';
-      const avInner = c.avatar ? `<img src="${c.avatar}" alt="${c.name}"/>` : (c.emoji||'🎭');
-      b.innerHTML = `<div class="pool-bubble-av" style="background:${colorBg}">${avInner}</div>`
-        + `<span style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>`
-        + `<span class="pool-bubble-rm" onclick="removeFromPool('${c.id}')" title="Remove">×</span>`;
-      zone.appendChild(b);
+      if (c) drop.appendChild(_castBubble(c, chap));
     });
   }
-  // Refresh card highlighting
+  // Highlight char cards in bottom panel
   document.querySelectorAll('.char-card[data-char-id]').forEach(card => {
-    const id = card.dataset.charId;
-    card.classList.toggle('in-pool', characterPool.includes(id));
+    const activeCast = chapterCasts[activeCastChap] || [];
+    card.classList.toggle('in-pool', activeCast.includes(card.dataset.charId));
   });
 }
 
-function addToPool(charId) {
-  if (!characterPool.includes(charId)) {
-    characterPool.push(charId);
-    renderPool();
+// ── Add a new chapter section to the strip ──
+function initCastSection(chap) {
+  chapterCasts[chap] = chapterCasts[chap] || [];
+  activeCastChap = chap;
+
+  const body = document.getElementById('castStripBody');
+  const empty = document.getElementById('castStripEmpty');
+  if (empty) empty.remove();
+
+  // Mark all previous sections as inactive
+  body.querySelectorAll('.cast-chap-sec').forEach(s => s.classList.remove('active'));
+
+  const sec = document.createElement('div');
+  sec.className = 'cast-chap-sec active';
+  sec.id = `castSec-${chap}`;
+  sec.innerHTML = `
+    <div class="cast-chap-label">
+      <span>Ch.${chap}</span>
+      <span style="font-size:9px;opacity:0.6">active</span>
+    </div>
+    <div class="cast-drop" id="castDrop-${chap}"
+      ondragover="onCastDragOver(event,${chap})"
+      ondragleave="onCastDragLeave(event,${chap})"
+      ondrop="onCastDrop(event,${chap})">
+      <div class="cast-drop-hint">Drag characters<br/>here</div>
+    </div>`;
+  body.appendChild(sec);
+
+  // Scroll to bottom so new section is visible
+  requestAnimationFrame(() => { body.scrollTop = body.scrollHeight; });
+}
+
+function addToCast(chap, charId) {
+  if (!chapterCasts[chap]) chapterCasts[chap] = [];
+  if (!chapterCasts[chap].includes(charId)) {
+    chapterCasts[chap].push(charId);
+    renderCastSection(chap);
   }
 }
 
-function removeFromPool(charId) {
-  characterPool = characterPool.filter(id => id !== charId);
-  renderPool();
+function removeFromCast(chap, charId) {
+  if (chapterCasts[chap]) {
+    chapterCasts[chap] = chapterCasts[chap].filter(id => id !== charId);
+    renderCastSection(chap);
+  }
 }
 
-function clearPool() {
-  characterPool = [];
-  renderPool();
+function getCast(chap) {
+  return chapterCasts[chap] || [];
 }
 
-function onPoolDragOver(e) {
+function onCastDragOver(e, chap) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
-  document.getElementById('poolDropZone').classList.add('drag-over');
+  const drop = document.getElementById(`castDrop-${chap}`);
+  if (drop) drop.classList.add('drag-over');
 }
 
-function onPoolDragLeave(e) {
-  document.getElementById('poolDropZone').classList.remove('drag-over');
+function onCastDragLeave(e, chap) {
+  const drop = document.getElementById(`castDrop-${chap}`);
+  if (drop) drop.classList.remove('drag-over');
 }
 
-function onPoolDrop(e) {
+function onCastDrop(e, chap) {
   e.preventDefault();
-  document.getElementById('poolDropZone').classList.remove('drag-over');
+  const drop = document.getElementById(`castDrop-${chap}`);
+  if (drop) drop.classList.remove('drag-over');
   const charId = e.dataTransfer.getData('charId');
-  if (charId) addToPool(charId);
+  if (charId) addToCast(chap, charId);
 }
 
 /* ── Reset All confirm ── */
@@ -3438,7 +3427,6 @@ function closeResetConfirm() {
 }
 function doResetAll() {
   closeResetConfirm();
-  clearPool();
   clearAll();
 }
 

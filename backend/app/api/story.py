@@ -548,6 +548,33 @@ def add_character():
 
 
 # ═══════════════════════════════════════════════════
+# /backtrack  — truncate story to a chapter for re-branching
+# ═══════════════════════════════════════════════════
+
+@story_bp.route("/backtrack", methods=["POST"])
+def backtrack():
+    """Truncate story to a given chapter so user can branch from there.
+
+    Body: { session_id, chapter_number }
+    chapter_number is 1-based; chapters after it are removed.
+    """
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    chapter_number = int(data.get("chapter_number", 1))
+
+    story = _stories.get(session_id)
+    if not story:
+        return jsonify({"error": "Session not found"}), 404
+
+    keep = max(1, chapter_number)
+    story.chapters = story.chapters[:keep]
+    story.status = "in_progress"
+    log.info("Backtrack session %s to chapter %d (%d chapters kept)",
+             session_id, chapter_number, len(story.chapters))
+    return jsonify({"status": "ok", "chapters_kept": len(story.chapters)})
+
+
+# ═══════════════════════════════════════════════════
 # /generate-choices
 # ═══════════════════════════════════════════════════
 
