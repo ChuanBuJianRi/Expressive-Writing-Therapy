@@ -62,7 +62,7 @@ Expressive-Writing-Therapy/
 
 ### Option A: Use the live deployment
 
-Visit the [live demo](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html) — no installation required. Configure your API key on first launch and start creating.
+Visit the [live demo](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html) — no installation or API key required. The backend is pre-configured with a shared LLM key, so you can start creating immediately.
 
 ---
 
