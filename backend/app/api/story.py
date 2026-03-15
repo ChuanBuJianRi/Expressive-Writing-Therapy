@@ -52,6 +52,23 @@ def _prev_prose(story: Story, max_chars: int = 800) -> str:
     return prose
 
 
+def _get_story(session_id: str):
+    """Return (story, error_response) — exactly one will be None."""
+    if not session_id:
+        return None, (jsonify({"error": "session_id is required"}), 400)
+    story = _stories.get(session_id)
+    if not story:
+        # Check if the session ever existed (metadata on disk)
+        sess = get_session(session_id)
+        if sess:
+            return None, (jsonify({
+                "error": "Story session expired — the server was restarted. "
+                         "Please reload the page and start a new story."
+            }), 404)
+        return None, (jsonify({"error": "Session not found"}), 404)
+    return story, None
+
+
 # ═══════════════════════════════════════════════════
 # /start
 # ═══════════════════════════════════════════════════
@@ -594,9 +611,8 @@ def generate_choices():
     session_id = data.get("session_id", "")
     num_choices = min(data.get("num_choices", 3), 4)
 
-    story = _stories.get(session_id)
-    if not story:
-        return jsonify({"error": "Session not found"}), 404
+    story, err = _get_story(session_id)
+    if err: return err
     if not story.chapters:
         return jsonify({"error": "No chapters generated yet"}), 400
 
@@ -668,6 +684,27 @@ def suggest():
             '{"name": "Atmosphere", "words": [...]}, '
             '{"name": "Era / Tech", "words": [...]}, '
             '{"name": "Special Elements", "words": [...]}]}'
+        ),
+        "characters": (
+            f"Story context: {context}\n\n"
+            "Design exactly 3 compelling characters for this story. "
+            "Each character must:\n"
+            "- Have a distinct role (e.g. Protagonist, Antagonist, Ally, Mentor, Rival, Outcast)\n"
+            "- Have a personality that creates natural CONFLICT or TENSION with at least one other character\n"
+            "- Have a concrete background event that shaped them\n"
+            "- Have a hidden secret or wound that could surface in the story\n"
+            "- Feel necessary and irreplaceable — not interchangeable\n\n"
+            'Return JSON:\n'
+            '{"characters": [\n'
+            '  {\n'
+            '    "name": "Character Name",\n'
+            '    "role": "Role (1-3 words)",\n'
+            '    "personality": "Personality, speech style, core traits (2-3 sentences)",\n'
+            '    "background": "Key backstory event or formative history (1-2 sentences)",\n'
+            '    "secrets": "Hidden wound, secret, or unspoken truth (1 sentence)"\n'
+            '  }\n'
+            ']}\n'
+            "Respond ONLY with JSON."
         ),
     }
 
@@ -825,9 +862,8 @@ def generate_branch_previews():
     data = request.get_json() or {}
     session_id = data.get("session_id", "")
 
-    story = _stories.get(session_id)
-    if not story:
-        return jsonify({"error": "Session not found"}), 404
+    story, err = _get_story(session_id)
+    if err: return err
     if not story.chapters:
         return jsonify({"error": "No chapters generated yet"}), 400
 
@@ -889,9 +925,8 @@ def director_chat():
     session_id = data.get("session_id", "")
     user_message = data.get("message", "").strip()
 
-    story = _stories.get(session_id)
-    if not story:
-        return jsonify({"error": "Session not found"}), 404
+    story, err = _get_story(session_id)
+    if err: return err
     if not user_message:
         return jsonify({"error": "message is required"}), 400
 
