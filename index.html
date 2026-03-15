@@ -1911,7 +1911,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-const API_BASE = 'https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
+const API_BASE = (['localhost','127.0.0.1',''].includes(window.location.hostname) || window.location.protocol === 'file:')
+  ? 'http://127.0.0.1:5001'
+  : 'https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
 
 // App mode: 'story' | 'memory'
 let currentAppMode = 'story';
@@ -3443,6 +3445,7 @@ function initWorldMap(worldConfig) {
     name,
     type: detectLocationType(name),
     visitedChapter: null,
+    snippets: [],
   }));
   worldMapInitialized = true;
 
@@ -4170,7 +4173,10 @@ async function generateBranchChoices() {
     const r=await fetch(`${API_BASE}/api/story/generate-choices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSessionId,num_choices:3})});
     if(!r.ok) throw new Error(`${r.status}`);
     const d=await r.json();
-    renderBranchChoices(d.choices||[]);
+    if(d.error) throw new Error(d.error);
+    const choices = d.choices||[];
+    if(choices.length === 0) throw new Error('Empty choices returned');
+    renderBranchChoices(choices);
   } catch(e){
     bc.innerHTML=`<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Could not generate choices (${e.message}). <button class="btn btn-ghost btn-xs" onclick="generateBranchChoices()">Retry</button></div>`;
   }
