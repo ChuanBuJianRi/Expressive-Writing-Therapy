@@ -114,19 +114,6 @@ open index.html
 
 ---
 
-#### 4. Configure your AI provider
-
-On first launch, a setup modal will appear automatically:
-
-1. Select your AI provider (OpenAI / Anthropic / Google)
-2. Paste your API key
-3. Choose a model
-4. Click **Start Creating**
-
-Your settings are saved locally in `localStorage` and synced to the backend on each session start.
-
----
-
 ## 🖥 Usage
 
 1. **Fill in the Director panel** — enter a story title, theme, and world setting (use the keyword picker or AI suggestions)
