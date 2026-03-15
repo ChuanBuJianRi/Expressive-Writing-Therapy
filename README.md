@@ -63,8 +63,8 @@ Unlike linear generators, StoryForge turns every chapter into a **branching deci
 
 ## 🌐 Live Demo
 
-- **Frontend**: [https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html)
-- **Backend API**: [https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud](https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud)
+- Web Page: [https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html)
+
 
 No installation or API key required — the backend is pre-configured, so you can start creating immediately.
 
