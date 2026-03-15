@@ -1911,7 +1911,7 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-const API_BASE = 'https://backend.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
+const API_BASE = 'https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
 
 // App mode: 'story' | 'memory'
 let currentAppMode = 'story';
@@ -2014,7 +2014,29 @@ async function saveSetup() {
   closeSetup();
 }
 function updateProviderStatus() { if(!setupConfig) return; document.getElementById('providerStatus').style.display=''; document.getElementById('providerStatusText').textContent=setupConfig.model||setupConfig.provider; }
-function initSetup() { loadConfig(); if(!setupConfig||!setupConfig.api_key){document.getElementById('setupOverlay').classList.remove('hidden');}else{updateProviderStatus();fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(setupConfig)}).catch(()=>{});} }
+function initSetup() {
+  loadConfig();
+  fetch(`${API_BASE}/api/config/llm`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.configured) {
+        // Server already has an API key — no need to prompt the user
+        updateProviderStatus();
+      } else if (setupConfig && setupConfig.api_key) {
+        // Use the user's saved key
+        updateProviderStatus();
+        fetch(`${API_BASE}/api/config/llm`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(setupConfig)}).catch(()=>{});
+      } else {
+        // No key anywhere — show the setup overlay
+        document.getElementById('setupOverlay').classList.remove('hidden');
+      }
+    })
+    .catch(() => {
+      if (!setupConfig || !setupConfig.api_key) {
+        document.getElementById('setupOverlay').classList.remove('hidden');
+      }
+    });
+}
 
 /* ══════════════════════════════════════════
    Characters
