@@ -1577,8 +1577,8 @@
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">🎭 Stage</button>
-      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
+      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">📖 Stage</button>
+      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">🎭 Story</button>
       <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
       <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">📋 Agent Log</button>
       <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
@@ -1598,7 +1598,7 @@
       <div class="tab-panel active" id="panelChat">
         <div class="chat-view" id="chatView">
           <div class="chat-empty">
-            <div style="font-size:36px;opacity:0.25">🎭</div>
+            <div style="font-size:36px;opacity:0.25">📖</div>
             <div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div>
           </div>
         </div>
@@ -1609,7 +1609,7 @@
         <!-- Chapter prose -->
         <div id="storyPanel">
           <div class="story-empty">
-            <div class="story-empty-icon">📖</div>
+            <div class="story-empty-icon">🎭</div>
             <div class="story-empty-text">Your story begins here</div>
             <div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div>
           </div>
@@ -1643,7 +1643,7 @@
             </div>
           </div>
           <div id="branchEndedMsg" class="branch-ended-msg" style="display:none;margin-bottom:12px">
-            <strong>📖 Story ended</strong><br/>This story is finished. You can export the full text or start a new story.
+            <strong>🎭 Story ended</strong><br/>This story is finished. You can export the full text or start a new story.
           </div>
           <!-- Mode: Choose (default 3 text choices) -->
           <div id="branchModeChoose">
@@ -4306,8 +4306,8 @@ function clearAll(){
   document.getElementById('mapLive').style.display='none';
   const mapSvg=document.getElementById('worldMapSvg'); if(mapSvg) mapSvg.innerHTML='';
   const mapLegend=document.getElementById('mapLegend'); if(mapLegend) mapLegend.innerHTML='';
-  document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">📖</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
-  document.getElementById('chatView').innerHTML='<div class="chat-empty"><div style="font-size:36px;opacity:0.25">🎭</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div></div>';
+  document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">🎭</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
+  document.getElementById('chatView').innerHTML='<div class="chat-empty"><div style="font-size:36px;opacity:0.25">📖</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div></div>';
   document.getElementById('branchSection').style.display='none';
   document.getElementById('logMessages').innerHTML='<div class="log-empty">No dialogue yet.</div>';
   switchMainTab('chat');
