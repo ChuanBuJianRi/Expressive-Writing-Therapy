@@ -21,6 +21,7 @@ story_bp = Blueprint("story", __name__)
 # In-memory store
 _stories: dict[str, Story] = {}
 
+
 TENSION_THRESHOLD = 0.72   # scenes above this can become decision points
 
 

@@ -511,6 +511,114 @@
     .avatar-preview-item.selected { border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(201,162,39,0.2); }
     .avatar-preview-item img { width: 100%; height: 100%; object-fit: cover; }
     .avatar-style-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 12px; }
+    /* ── Mode Toggle (Story / Memory) ── */
+    .mode-toggle-bar {
+      display: flex; gap: 6px; padding: 10px 14px 6px; border-bottom: 1px solid var(--border);
+    }
+    .mode-toggle-btn {
+      flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+      border-radius: 8px; border: 1.5px solid var(--border); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all 0.18s; text-align: center;
+    }
+    .mode-toggle-btn:hover { border-color: var(--border-light); color: var(--text-secondary); }
+    .mode-toggle-btn.active.story-mode {
+      background: rgba(201,162,39,0.1); border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+    .mode-toggle-btn.active.memory-mode {
+      background: rgba(90,155,130,0.12); border-color: var(--accent-mint);
+      color: var(--accent-mint);
+    }
+
+    /* ── Memory Mode Form ── */
+    .memory-form-wrap { padding: 2px 0; }
+    .memory-question {
+      background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px; transition: border-color 0.15s;
+    }
+    .memory-question:focus-within { border-color: var(--accent-mint); }
+    .memory-question-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--accent-mint); margin-bottom: 5px; display: block;
+    }
+    .memory-question-hint {
+      font-size: 10px; color: var(--text-muted); margin-bottom: 5px; line-height: 1.5;
+    }
+    .memory-input {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: var(--text-primary); font-size: 12px; line-height: 1.55;
+      font-family: inherit; resize: none;
+    }
+    .memory-input::placeholder { color: var(--text-muted); }
+    .memory-start-btn {
+      width: 100%; padding: 11px; border-radius: 10px; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.03em; margin-top: 8px;
+      background: linear-gradient(135deg, rgba(90,155,130,0.25), rgba(90,155,130,0.12));
+      border: 1.5px solid var(--accent-mint); color: var(--accent-mint);
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .memory-start-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(90,155,130,0.38), rgba(90,155,130,0.2));
+      box-shadow: 0 4px 18px rgba(90,155,130,0.2);
+    }
+    .memory-start-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ── Memory World Info Banner ── */
+    .memory-world-banner {
+      margin: 0 0 12px; padding: 12px 16px; border-radius: 10px;
+      background: rgba(90,155,130,0.08); border: 1px solid rgba(90,155,130,0.25);
+    }
+    .memory-world-name { font-size: 14px; font-weight: 800; color: var(--accent-mint); margin-bottom: 3px; }
+    .memory-world-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── Memory Scene Block ── */
+    .memory-scene-block {
+      background: var(--bg-card2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; margin-bottom: 12px; animation: fadeIn 0.35s ease;
+    }
+    .memory-scene-number {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent-mint); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .memory-scene-number::after { content: ''; flex: 1; height: 1px; background: rgba(90,155,130,0.2); }
+    .memory-scene-prose {
+      font-size: 14px; line-height: 1.85; color: var(--text-primary);
+      font-family: Georgia, 'Times New Roman', serif; white-space: pre-wrap;
+    }
+
+    /* ── Memory Choices ── */
+    .memory-choices-section {
+      padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 6px;
+    }
+    .memory-choices-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .memory-choices-label::before { content: '💭'; }
+    .memory-choice-cards { display: flex; flex-direction: column; gap: 7px; }
+    .memory-choice-card {
+      background: var(--bg-card2); border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 11px 15px; cursor: pointer; transition: all 0.18s; position: relative;
+    }
+    .memory-choice-card:hover:not(.loading) {
+      border-color: var(--accent-mint); background: rgba(90,155,130,0.07);
+      transform: translateX(3px);
+    }
+    .memory-choice-card.loading { opacity: 0.55; cursor: not-allowed; }
+    .memory-choice-title {
+      font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;
+    }
+    .memory-choice-desc { font-size: 11px; color: var(--text-muted); }
+    .memory-choice-arrow {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 12px; transition: all 0.18s;
+    }
+    .memory-choice-card:hover:not(.loading) .memory-choice-arrow { color: var(--accent-mint); transform: translateY(-50%) translateX(3px); }
+    .memory-choices-loading {
+      display: flex; align-items: center; gap: 8px; padding: 10px 0;
+      font-size: 12px; color: var(--text-muted);
+    }
+
     /* Tension bar */
     .tension-bar-wrap { display: none; padding: 4px 28px 12px; }
     .tension-bar-wrap.visible { display: flex; align-items: center; gap: 8px; }
@@ -1265,6 +1373,12 @@
   <!-- ── Left Panel ── -->
   <div class="left-panel">
 
+    <!-- Mode Toggle -->
+    <div class="mode-toggle-bar">
+      <button class="mode-toggle-btn active story-mode" id="modeStoryBtn" onclick="switchAppMode('story')">🎭 Story Mode</button>
+      <button class="mode-toggle-btn memory-mode" id="modeMemoryBtn" onclick="switchAppMode('memory')">💭 Memory Mode</button>
+    </div>
+
     <!-- Story Identity -->
     <div class="panel-section" id="guideDirectorSection">
       <div class="section-label">
@@ -1381,6 +1495,76 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start Story
       </button>
+    </div>
+
+    <!-- ── Memory Mode Form (hidden by default) ── -->
+    <div id="memoryModePanel" style="display:none;padding:6px 14px 14px">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-label" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/><path d="M12 8v4l3 3"/></svg>
+          Childhood Memories
+        </div>
+        <button onclick="fillMemoryTestData()" style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px dashed var(--border-light);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s;letter-spacing:0.04em" onmouseover="this.style.borderColor='var(--accent-mint)';this.style.color='var(--accent-mint)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-muted)'">⚡ Quick Test</button>
+      </div>
+
+      <div class="memory-form-wrap">
+
+        <!-- Q1: Hometown -->
+        <div class="memory-question">
+          <span class="memory-question-label">🏡 Hometown</span>
+          <div class="memory-question-hint">Where did you grow up as a child?</div>
+          <input class="memory-input" id="mem_hometown" placeholder="e.g. a small town in Ohio, my grandma's farmhouse…" />
+        </div>
+
+        <!-- Q2: Best friend -->
+        <div class="memory-question">
+          <span class="memory-question-label">👫 Best Friend</span>
+          <div class="memory-question-hint">What was your closest childhood friend's name? What were they like?</div>
+          <input class="memory-input" id="mem_best_friend" placeholder="e.g. Jamie — always daring me to climb the tallest trees…" />
+        </div>
+
+        <!-- Q3: Favorite place -->
+        <div class="memory-question">
+          <span class="memory-question-label">📍 A Special Place</span>
+          <div class="memory-question-hint">Where did you love to go as a kid?</div>
+          <input class="memory-input" id="mem_favorite_place" placeholder="e.g. the creek behind our house, the old library, the school playground…" />
+        </div>
+
+        <!-- Q4: Happy memory -->
+        <div class="memory-question">
+          <span class="memory-question-label">✨ A Joyful Moment</span>
+          <div class="memory-question-hint">Describe a childhood memory that made you especially happy — even a small one</div>
+          <textarea class="memory-input" id="mem_happy_memory" rows="2" placeholder="e.g. catching fireflies in a jar on a summer evening and using them as a lantern…"></textarea>
+        </div>
+
+        <!-- Q5: Favorite activity -->
+        <div class="memory-question">
+          <span class="memory-question-label">🎮 Favorite Game or Activity</span>
+          <div class="memory-question-hint">What did you love to play or do as a child?</div>
+          <input class="memory-input" id="mem_favorite_activity" placeholder="e.g. riding bikes, building forts, reading comics, fishing…" />
+        </div>
+
+        <!-- Q6: Family member -->
+        <div class="memory-question">
+          <span class="memory-question-label">💛 Someone Special</span>
+          <div class="memory-question-hint">Which family member shaped your childhood the most? Tell us a little about them.</div>
+          <input class="memory-input" id="mem_family_member" placeholder="e.g. my grandfather — he taught me to whittle wood and told the best stories…" />
+        </div>
+
+        <!-- Q7: Favorite season -->
+        <div class="memory-question">
+          <span class="memory-question-label">🌿 Favorite Season</span>
+          <div class="memory-question-hint">What season did you love most as a kid? What made it special?</div>
+          <input class="memory-input" id="mem_season" placeholder="e.g. summer — no school, swimming all day, ice cream after dinner…" />
+        </div>
+
+        <button class="memory-start-btn" id="memoryStartBtn" onclick="startMemoryMode()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/><path d="M12 8v4l3 3"/></svg>
+          Begin Remembering
+        </button>
+
+      </div>
     </div>
 
   </div><!-- /left-panel -->
@@ -1729,6 +1913,9 @@
 <script>
 const API_BASE = 'http://localhost:5001';
 
+// App mode: 'story' | 'memory'
+let currentAppMode = 'story';
+
 /* ══════════════════════════════════════════
    Resizable panels
 ══════════════════════════════════════════ */
@@ -1814,7 +2001,13 @@ async function saveSetup() {
   btn.innerHTML='<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Connecting…';
   const meta=PROVIDER_META[currentProvider];
   const cfg={provider:currentProvider,api_key:apiKey,model,base_url:meta.base_url};
-  try { const r=await fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||`${r.status}`); showToast('API configured!','success'); } catch(e){showToast(`Saved locally (backend: ${e.message})`,'info');}
+  try {
+    const r=await fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+    if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||`${r.status}`);
+    showToast('API configured! Fill the left panel and click Start Story.','success');
+  } catch(e){
+    showToast('Saved in browser. If backend is not running on '+API_BASE+', start it and click API to retry.','info');
+  }
   localStorage.setItem('storyforge_config',JSON.stringify(cfg)); setupConfig=cfg;
   updateProviderStatus();
   btn.disabled=false; btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Start Creating';
@@ -4510,6 +4703,173 @@ document.addEventListener('keydown', e => {
     else if (selectedNetNode) { selectedNetNode = null; renderNetwork(); }
   }
 });
+
+
+/* ══════════════════════════════════════════
+   MEMORY MODE
+   Left panel input → childhood questionnaire
+   Everything else (right panel, multiagent,
+   tension, branches) is identical to Story Mode
+══════════════════════════════════════════ */
+
+/* ── Switch App Mode (only toggles left-panel input) ── */
+function switchAppMode(mode) {
+  currentAppMode = mode;
+  const storyBtn  = document.getElementById('modeStoryBtn');
+  const memoryBtn = document.getElementById('modeMemoryBtn');
+  const memPanel  = document.getElementById('memoryModePanel');
+
+  if (mode === 'memory') {
+    storyBtn.classList.remove('active');
+    memoryBtn.classList.add('active');
+    document.getElementById('guideDirectorSection').style.display = 'none';
+    document.querySelectorAll('.left-panel .panel-section').forEach(s => s.style.display = 'none');
+    memPanel.style.display = 'block';
+    const lp = document.querySelector('.left-panel');
+    if (lp) lp.scrollTop = 0;
+  } else {
+    memoryBtn.classList.remove('active');
+    storyBtn.classList.add('active');
+    document.getElementById('guideDirectorSection').style.display = '';
+    document.querySelectorAll('.left-panel .panel-section').forEach(s => s.style.display = '');
+    memPanel.style.display = 'none';
+  }
+}
+
+/* ── Quick Test — Pre-fill memory form ── */
+function fillMemoryTestData() {
+  document.getElementById('mem_hometown').value          = 'A small coastal town in Maine — fog in the mornings, lobster boats in the harbor';
+  document.getElementById('mem_best_friend').value       = 'Tommy — freckled, fearless, always the first to jump off the rope swing into the lake';
+  document.getElementById('mem_favorite_place').value    = 'The old wooden dock at the edge of Mirror Lake, where we fished every Saturday morning';
+  document.getElementById('mem_happy_memory').value      = 'One summer evening we built a raft from scrap wood and floated it — it held for ten minutes before sinking, and we laughed so hard we couldn\'t breathe';
+  document.getElementById('mem_favorite_activity').value = 'Catching crayfish under rocks, riding bikes to the penny candy store, building forts in the pine woods';
+  document.getElementById('mem_family_member').value     = 'My grandfather — smelled of pipe tobacco and sawdust, taught me to whittle, always had a story after dinner';
+  document.getElementById('mem_season').value            = 'Summer — no shoes, no schedule, the whole world felt wide open';
+  document.querySelectorAll('.memory-question').forEach(q => {
+    q.style.transition = 'background 0.3s';
+    q.style.background = 'rgba(90,155,130,0.1)';
+    setTimeout(() => { q.style.background = ''; }, 700);
+  });
+  showToast('Sample data filled — ready to test!', 'success');
+}
+
+/* ── Begin Remembering
+   1. Translate questionnaire → story params
+   2. AI-generate characters from the answers
+   3. Auto-populate Chapter 1 cast
+   4. Switch left panel back to Director view (auto-filled)
+   5. Call startStory() — identical to Story Mode
+── */
+async function startMemoryMode() {
+  if (isGenerating) return;
+
+  const info = {
+    hometown:          document.getElementById('mem_hometown').value.trim(),
+    best_friend:       document.getElementById('mem_best_friend').value.trim(),
+    favorite_place:    document.getElementById('mem_favorite_place').value.trim(),
+    happy_memory:      document.getElementById('mem_happy_memory').value.trim(),
+    favorite_activity: document.getElementById('mem_favorite_activity').value.trim(),
+    family_member:     document.getElementById('mem_family_member').value.trim(),
+    season:            document.getElementById('mem_season').value.trim(),
+  };
+
+  if (!Object.values(info).some(v => v)) {
+    showToast('Please fill in at least some childhood details before starting', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('memoryStartBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Generating characters…';
+
+  try {
+    // ── 1. Build theme & world setting from answers ──
+    const theme = info.happy_memory
+      ? info.happy_memory.slice(0, 120)
+      : `The joy and wonder of childhood${info.hometown ? ' in ' + info.hometown : ''}`;
+
+    const settingLines = [];
+    if (info.hometown)          settingLines.push(`Hometown: ${info.hometown}.`);
+    if (info.favorite_place)    settingLines.push(`Key location: ${info.favorite_place}.`);
+    if (info.season)            settingLines.push(`Season / atmosphere: ${info.season}.`);
+    if (info.favorite_activity) settingLines.push(`Favourite activities: ${info.favorite_activity}.`);
+    settingLines.push('Tone: warm, nostalgic, healing. Focus on sensory richness and childhood joy.');
+    const customSetting = settingLines.join(' ');
+
+    // ── 2. AI-generate characters based on the memory context ──
+    const charContext = [
+      theme,
+      customSetting,
+      info.best_friend   && `Best friend: ${info.best_friend}`,
+      info.family_member && `Family member: ${info.family_member}`,
+    ].filter(Boolean).join('\n');
+
+    const suggestRes = await fetch(`${API_BASE}/api/story/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'initial_characters', context: charContext, num: 3 }),
+    });
+    if (!suggestRes.ok) throw new Error(`Character generation failed (${suggestRes.status})`);
+    const suggestData = await suggestRes.json();
+    const generatedChars = suggestData.characters || [];
+
+    // ── 3. Replace characters array with generated ones ──
+    characters = [];
+    nextId = 20; // avoid collision with existing IDs
+    const colorCycle = ['blue','purple','teal','rose'];
+    const emojiCycle = ['🌟','😄','💛','🌿'];
+    generatedChars.forEach((c, i) => {
+      characters.push({
+        id: String(nextId++),
+        name:        c.name        || `Character ${i+1}`,
+        role:        c.role        || 'Supporting',
+        personality: c.personality || '',
+        background:  c.background  || '',
+        secrets:     c.secrets     || '',
+        emoji:       emojiCycle[i % emojiCycle.length],
+        color:       colorCycle[i % colorCycle.length],
+        charType:    c.cast_type   || (i === 0 ? 'protagonist' : 'supporting'),
+      });
+    });
+    renderCharacters();
+
+    // ── 4. Pre-fill story form fields ──
+    document.getElementById('storyTitle').value   = `Childhood${info.hometown ? ' · ' + info.hometown.split(/[,—–]/)[0].trim() : ''}`;
+    document.getElementById('storyTheme').value   = theme;
+    document.getElementById('storySetting').value = customSetting;
+    document.getElementById('directorNote').value = 'Memory mode: keep the tone warm, nostalgic, and healing throughout. Focus on sensory detail and the joy of childhood. No darkness.';
+
+    // Activate Healing + Realistic chips
+    document.querySelectorAll('#styleChips .chip').forEach(c => {
+      c.classList.toggle('active', ['Healing','Realistic'].includes(c.textContent.trim()));
+    });
+
+    // ── 5. Auto-populate Chapter 1 cast ──
+    chapterCasts = {};
+    chapterCasts[1] = characters.map(c => c.id);
+    activeCastChap = 1;
+    if (!document.getElementById('castSec-1')) initCastSection(1);
+    // Sync the visual cast strip
+    characters.forEach(c => {
+      if (!getCast(1).includes(c.id)) {
+        chapterCasts[1].push(c.id);
+      }
+    });
+
+    // ── 6. Switch left panel → Director view (auto-filled) ──
+    document.getElementById('memoryModePanel').style.display = 'none';
+    document.getElementById('guideDirectorSection').style.display = '';
+    document.querySelectorAll('.left-panel .panel-section').forEach(s => s.style.display = '');
+
+    // ── 7. Hand off to startStory() — identical to Story Mode ──
+    await startStory();
+
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/><path d="M12 8v4l3 3"/></svg> Begin Remembering';
+  }
+}
 </script>
 </body>
 </html>
