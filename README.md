@@ -53,7 +53,6 @@ Expressive-Writing-Therapy/
 
 - Python 3.10+
 - A modern browser (Chrome / Safari / Firefox)
-- An API key from one of: [OpenAI](https://platform.openai.com/api-keys), [Anthropic](https://console.anthropic.com/keys), or [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 ---
 
