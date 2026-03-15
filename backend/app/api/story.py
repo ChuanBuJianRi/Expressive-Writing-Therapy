@@ -315,48 +315,87 @@ def _chapter_stream(story, plan, chapter_index, user_input,
             "text": directions.get("tension_driver", "Directions issued."),
         })
 
-        # ── Character actions ──
+        # ── Stage narrator (conditional) ──
+        is_first_scene = scene_plan.scene_number == 1
+        show_narration = is_first_scene or directions.get("show_stage_direction", True)
+        if show_narration:
+            if is_first_scene:
+                narrator_text = directions.get("scene_setup", scene_plan.description)
+                atmo = directions.get("atmosphere", "")
+            else:
+                narrator_text = directions.get("stage_direction", "")
+                atmo = ""
+            if narrator_text.strip():
+                yield _sse("chat_narrator", {
+                    "scene_number": scene_plan.scene_number,
+                    "scene_title": scene_plan.title,
+                    "scene_setup": narrator_text,
+                    "atmosphere": atmo,
+                    "tension_level": scene_plan.tension_level,
+                })
+
+        # ── Character actions (multi-round dialogue) ──
         actions = []
         public_actions = []
         char_instructions = directions.get("character_instructions", {})
+        target_exchanges = 8
+        num_rounds = max(2, (target_exchanges + len(scene_chars) - 1) // len(scene_chars))
 
-        for i, char in enumerate(scene_chars):
-            char_id = char.get("id", str(i))
-            instruction = char_instructions.get(char_id, {
-                "private_instruction": "Follow your instincts and express your character fully.",
-                "emotional_goal": "Show your authentic self.",
-                "action_hint": "React naturally to the scene.",
-                "interaction_target": "Those around you",
-            })
+        for round_num in range(1, num_rounds + 1):
+            for i, char in enumerate(scene_chars):
+                char_id = char.get("id", str(i))
+                instruction = char_instructions.get(char_id, {
+                    "private_instruction": "Follow your instincts and express your character fully.",
+                    "emotional_goal": "Show your authentic self.",
+                    "action_hint": "React naturally to the scene.",
+                    "interaction_target": "Those around you",
+                })
 
-            action = generate_character_action(
-                character=char,
-                world_config=story.world_config,
-                director_instruction=instruction,
-                scene_setting=directions.get("scene_setup", scene_plan.description),
-                other_characters_public=public_actions,
-                scene_tension=scene_plan.tension_level,
-            )
-            actions.append(action)
-            public_actions.append({
-                "name": char["name"],
-                "public_action": action.public_action,
-                "dialogue": action.dialogue,
-            })
+                action = generate_character_action(
+                    character=char,
+                    world_config=story.world_config,
+                    director_instruction=instruction,
+                    scene_setting=directions.get("scene_setup", scene_plan.description),
+                    other_characters_public=public_actions,
+                    scene_tension=scene_plan.tension_level,
+                    round_number=round_num,
+                    total_rounds=num_rounds,
+                )
+                actions.append(action)
+                public_actions.append({
+                    "name": char["name"],
+                    "public_action": action.public_action,
+                    "dialogue": action.dialogue,
+                })
 
-            char.setdefault("memory", []).append({
-                "chapter": chapter_num,
-                "scene": scene_plan.scene_number,
-                "public_action": action.public_action,
-                "private_thought": action.private_thought,
-            })
+                # Only store memory once per scene per character (first round)
+                if round_num == 1:
+                    char.setdefault("memory", []).append({
+                        "chapter": chapter_num,
+                        "scene": scene_plan.scene_number,
+                        "public_action": action.public_action,
+                        "private_thought": action.private_thought,
+                    })
 
-            display_text = action.dialogue if action.dialogue else action.public_action
-            yield _sse("log", {
-                "sender": f"🎭 {char['name']}",
-                "cls": f"char-{char_id}",
-                "text": display_text,
-            })
+                display_text = action.dialogue if action.dialogue else action.public_action
+                yield _sse("log", {
+                    "sender": f"🎭 {char['name']}",
+                    "cls": f"char-{char_id}",
+                    "text": display_text,
+                })
+
+                yield _sse("chat_action", {
+                    "scene_number": scene_plan.scene_number,
+                    "character_id": char.get("id", str(i)),
+                    "character_name": char["name"],
+                    "character_color": char.get("color", "blue"),
+                    "character_avatar": char.get("avatar", ""),
+                    "public_action": action.public_action,
+                    "private_thought": action.private_thought,
+                    "dialogue": action.dialogue,
+                    "emotional_state": action.emotional_state,
+                    "growth_moment": action.growth_moment,
+                })
 
         # ── Compose scene prose ──
         yield _sse("progress", {

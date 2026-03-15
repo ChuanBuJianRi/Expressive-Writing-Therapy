@@ -56,11 +56,11 @@ Rules:
 
 Output JSON:
 {
-  "public_action": "what your character visibly does — specific, physical, tied to the scene's event",
+  "public_action": "SHORT action/gesture, max 6-8 words — e.g. 'leans against the wall, arms crossed' or 'slides the letter across the table'",
   "private_thought": "inner monologue in YOUR voice — not the narrator's, not generic",
   "dialogue": "exact words in YOUR voice (empty string if silent — silence is a valid choice)",
-  "emotional_state": "one or two keywords",
-  "growth_moment": "if something shifts in your understanding, name it precisely; else empty"
+  "emotional_state": "one or two keywords, e.g. 'tense' or 'quietly furious'",
+  "growth_moment": "if something shifts in your understanding, name it in a few words; else empty"
 }
 Respond ONLY with the JSON. Write in English."""
 
@@ -72,6 +72,8 @@ def generate_character_action(
     scene_setting: str,
     other_characters_public: list[dict] = None,
     scene_tension: float = 0.5,
+    round_number: int = 1,
+    total_rounds: int = 1,
 ) -> CharacterAction:
     """Generate a character's public action for a scene (Director Phase 2 output)."""
     log.info("Character '%s' acting in scene (tension=%.2f)", character["name"], scene_tension)
@@ -117,6 +119,10 @@ def generate_character_action(
         f"- Interaction target: {director_instruction.get('interaction_target', 'Those around you')}\n\n"
         + (f"Other characters' visible actions:{others_ctx}\n\n" if others_ctx else "You act first in this scene.\n\n")
         + (f"Your memories from earlier:{memory_ctx}\n\n" if memory_ctx else "")
+        + (f"This is exchange {round_number} of {total_rounds} in this scene. "
+           "React specifically to what others just said or did. Advance the conversation — "
+           "don't repeat yourself, build on the tension. Keep your dialogue natural and responsive.\n\n"
+           if round_number > 1 else "")
         + "Respond as your character to the current scene."
     )
 

@@ -764,6 +764,42 @@
     .tab-panel::-webkit-scrollbar { width: 4px; }
     .tab-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
+    /* ── Stage (chat) view ── */
+    .chat-view {
+      padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 2px;
+      flex: 1; overflow-y: auto;
+    }
+    .chat-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; min-height: 200px;
+    }
+    .chat-scene-divider {
+      display: flex; align-items: center; gap: 10px; margin: 16px 0 8px;
+      font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .chat-scene-divider::before, .chat-scene-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .chat-narrator {
+      text-align: center; font-size: 12px; color: var(--text-muted); font-style: italic;
+      padding: 6px 24px; line-height: 1.6; max-width: 520px; margin: 2px auto;
+    }
+    .chat-msg {
+      padding: 3px 0; font-size: 13px; line-height: 1.5;
+      animation: chatFadeIn 0.3s ease;
+    }
+    @keyframes chatFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg .chat-name { font-weight: 700; }
+    .chat-msg .chat-name.color-blue   { color: var(--char-blue, #6b8f71); }
+    .chat-msg .chat-name.color-purple { color: var(--char-purple, #b85c38); }
+    .chat-msg .chat-name.color-teal   { color: var(--char-teal, #5a9b82); }
+    .chat-msg .chat-name.color-rose   { color: var(--char-rose, #c97b7b); }
+    .chat-msg .chat-parens { color: var(--text-muted); font-style: italic; }
+
     /* Story text panel */
     #storyPanel { padding: 0 28px 24px; }
 
@@ -1260,9 +1296,10 @@
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
+      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">🎭 Stage</button>
+      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
       <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
-      <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">💬 Agent Log</button>
+      <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">📋 Agent Log</button>
       <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
       <button class="tab-btn"        id="tabNetwork"  onclick="switchMainTab('network')">🕸 Relations</button>
       <div class="tab-spacer"></div>
@@ -1276,7 +1313,17 @@
     <!-- Story tab -->
     <div class="story-content">
 
-      <div class="tab-panel active" id="panelStory">
+      <!-- Chat (dialogue) tab -->
+      <div class="tab-panel active" id="panelChat">
+        <div class="chat-view" id="chatView">
+          <div class="chat-empty">
+            <div style="font-size:36px;opacity:0.25">🎭</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panelStory">
 
         <!-- Chapter prose -->
         <div id="storyPanel">
@@ -1679,9 +1726,6 @@ function initSetup() { loadConfig(); if(!setupConfig||!setupConfig.api_key){docu
 const COLORS=['blue','purple','teal','rose'];
 const EMOJIS=['🧙','🗡️','🌸','🔮','🦊','🌊','⚔️','🌙','🔥','🌿','🐉','💀','🕊️','🌺','🎭'];
 let characters=[
-  {id:'blue',   name:'Elena', role:'Protagonist · Mage',   personality:'Curious and gentle, hiding great power',  background:'Raised in a village destroyed by magic she unknowingly caused.', secrets:'Believes she is responsible for her village\'s fate; terrified of her own power.', emoji:'🧙',color:'blue'},
-  {id:'purple', name:'Karl',  role:'Supporting · Ranger',  personality:'Few words, fierce loyalty beneath the blade', background:'Former palace guard who deserted after witnessing a royal cover-up.', secrets:'Carries a letter he never delivered; its contents would change everything.', emoji:'🗡️',color:'purple'},
-  {id:'teal',   name:'Lysa',  role:'Supporting · Oracle',  personality:'Sees fate but chooses to believe in change', background:'Born blind, gained visions through a pact whose cost she hasn\'t paid yet.', secrets:'She has already seen how the story ends — and has chosen not to tell anyone.', emoji:'🔮',color:'teal'},
 ];
 let storyCharacters = []; // characters added mid-story
 let nextId = 4;
@@ -1847,7 +1891,6 @@ function addCoreChar() {
   renderCharacters(); showToast('Character added','success');
 }
 function removeChar(id, isStory) {
-  if (!isStory && characters.length <= 1) { showToast('At least one core character required','error'); return; }
   if (isStory) storyCharacters = storyCharacters.filter(c => c.id != id);
   else characters = characters.filter(c => c.id != id);
   renderCharacters(); showToast('Character removed','info');
@@ -1987,18 +2030,89 @@ function applyKeywords() {
    Tab switching
 ══════════════════════════════════════════ */
 function switchMainTab(name) {
-  ['story','tree','log','map','network'].forEach(n=>{
+  ['chat','story','tree','log','map','network'].forEach(n=>{
     document.getElementById('tab'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
     document.getElementById('panel'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===name);
   });
   if(name==='tree') renderTreeSVG();
   if(name==='network') {
     setTimeout(renderNetwork, 60);
-    // Clear badge when user opens Relations tab
     const badge = document.getElementById('relBadge');
     if (badge) badge.remove();
   }
   if(name==='map') { setTimeout(renderWorldMap, 60); }
+}
+
+/* ══════════════════════════════════════════
+   Stage View
+══════════════════════════════════════════ */
+
+function addChatNarrator(data) {
+  const cv = document.getElementById('chatView');
+  const empty = cv.querySelector('.chat-empty');
+  if (empty) empty.remove();
+
+  const divider = document.createElement('div');
+  divider.className = 'chat-scene-divider';
+  divider.textContent = `Scene ${data.scene_number}: ${data.scene_title || ''}`;
+  cv.appendChild(divider);
+
+  let txt = data.scene_setup || '';
+  if (data.atmosphere) txt += ' — ' + data.atmosphere;
+  if (txt.trim()) {
+    const nar = document.createElement('div');
+    nar.className = 'chat-narrator';
+    nar.textContent = txt;
+    cv.appendChild(nar);
+  }
+  _scrollChatToBottom();
+}
+
+function addChatBubble(data) {
+  const cv = document.getElementById('chatView');
+  const empty = cv.querySelector('.chat-empty');
+  if (empty) empty.remove();
+
+  const color = data.character_color || 'blue';
+  const name = data.character_name || 'Unknown';
+
+  // Build message text: dialogue + (action/emotion in parentheses)
+  let parts = [];
+  if (data.dialogue) parts.push(data.dialogue);
+  let parens = [];
+  if (data.public_action) parens.push(data.public_action);
+  if (data.emotional_state) parens.push(data.emotional_state);
+
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'chat-name color-' + color;
+  nameSpan.textContent = name + ': ';
+  msg.appendChild(nameSpan);
+
+  if (data.dialogue) {
+    msg.appendChild(document.createTextNode(data.dialogue + ' '));
+  }
+  if (parens.length) {
+    const p = document.createElement('span');
+    p.className = 'chat-parens';
+    p.textContent = '(' + parens.join(' · ') + ')';
+    msg.appendChild(p);
+  }
+  if (!data.dialogue && !parens.length) {
+    msg.appendChild(document.createTextNode('...'));
+  }
+
+  cv.appendChild(msg);
+  _scrollChatToBottom();
+}
+
+function _scrollChatToBottom() {
+  const cv = document.getElementById('chatView');
+  if (cv.scrollHeight - cv.scrollTop - cv.clientHeight < 120) {
+    requestAnimationFrame(() => cv.scrollTop = cv.scrollHeight);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -3386,9 +3500,10 @@ async function startStory() {
   document.getElementById('storyPanel').innerHTML='';
   document.getElementById('branchSection').style.display='none';
   document.getElementById('logMessages').innerHTML='';
+  document.getElementById('chatView').innerHTML='';
   document.getElementById('progressWrap').classList.add('visible');
   setProgress(0,'Building story world…');
-  switchMainTab('story');
+  switchMainTab('chat');
 
   const chapterLengthHint = document.getElementById('chapterLength').value || 'medium';
   const tags=[...document.querySelectorAll('.chip.active')].map(c=>c.textContent.trim());
@@ -3460,6 +3575,10 @@ async function generateNextChapter(choiceTitle, choiceDesc) {
         if(data.tension !== undefined) setTension(data.tension, data.scene_title||'');
       } else if(eventType==='log'){
         addLogMsg({sender:data.sender,cls:data.cls,text:data.text});
+      } else if(eventType==='chat_narrator'){
+        addChatNarrator(data);
+      } else if(eventType==='chat_action'){
+        addChatBubble(data);
       } else if(eventType==='scene'){
         // Render scene prose as it streams in
         if (!chapterHeaderAdded) {
@@ -3714,8 +3833,10 @@ function clearAll(){
   const mapSvg=document.getElementById('worldMapSvg'); if(mapSvg) mapSvg.innerHTML='';
   const mapLegend=document.getElementById('mapLegend'); if(mapLegend) mapLegend.innerHTML='';
   document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">📖</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
+  document.getElementById('chatView').innerHTML='<div class="chat-empty"><div style="font-size:36px;opacity:0.25">🎭</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div></div>';
   document.getElementById('branchSection').style.display='none';
   document.getElementById('logMessages').innerHTML='<div class="log-empty">No dialogue yet.</div>';
+  switchMainTab('chat');
   document.getElementById('progressWrap').classList.remove('visible');
   ['statWords','statChapters','statBranches'].forEach(id=>document.getElementById(id).textContent='0');
   document.getElementById('statTime').textContent='—';
