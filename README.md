@@ -1,7 +1,5 @@
 # StoryForge — Multi-Agent Branching Story Generator
 
-> An expressive writing therapy tool powered by multi-agent AI collaboration.
-
 StoryForge is an interactive AI story creation platform rooted in **expressive writing therapy** — the evidence-based practice of using narrative to process emotions, reframe lived experiences, and foster psychological healing.
 
 A **Director Agent** guides the emotional arc of the story while multiple **Character Agents** collaborate in real time, giving voice to different inner perspectives. This mirrors therapeutic techniques where externalizing internal conflicts through fictional characters builds self-awareness and emotional distance from personal pain.
