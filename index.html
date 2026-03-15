@@ -1349,7 +1349,7 @@
       <div class="provider-dot"></div>
       <span id="providerStatusText">GPT-4o</span>
     </div>
-    <button class="btn-settings" style="opacity:0.4;cursor:default;pointer-events:none;">
+    <button class="btn-settings" onclick="openSetup()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       API
     </button>
@@ -1577,8 +1577,8 @@
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">📖 Stage</button>
-      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">🎭 Story</button>
+      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">🎭 Stage</button>
+      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
       <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
       <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">📋 Agent Log</button>
       <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
@@ -1598,7 +1598,7 @@
       <div class="tab-panel active" id="panelChat">
         <div class="chat-view" id="chatView">
           <div class="chat-empty">
-            <div style="font-size:36px;opacity:0.25">📖</div>
+            <div style="font-size:36px;opacity:0.25">🎭</div>
             <div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div>
           </div>
         </div>
@@ -1609,7 +1609,7 @@
         <!-- Chapter prose -->
         <div id="storyPanel">
           <div class="story-empty">
-            <div class="story-empty-icon">🎭</div>
+            <div class="story-empty-icon">📖</div>
             <div class="story-empty-text">Your story begins here</div>
             <div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div>
           </div>
@@ -1643,7 +1643,7 @@
             </div>
           </div>
           <div id="branchEndedMsg" class="branch-ended-msg" style="display:none;margin-bottom:12px">
-            <strong>🎭 Story ended</strong><br/>This story is finished. You can export the full text or start a new story.
+            <strong>📖 Story ended</strong><br/>This story is finished. You can export the full text or start a new story.
           </div>
           <!-- Mode: Choose (default 3 text choices) -->
           <div id="branchModeChoose">
@@ -1911,7 +1911,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-const API_BASE = 'https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5001'
+  : 'https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud';
 
 // App mode: 'story' | 'memory'
 let currentAppMode = 'story';
@@ -4328,8 +4330,8 @@ function clearAll(){
   document.getElementById('mapLive').style.display='none';
   const mapSvg=document.getElementById('worldMapSvg'); if(mapSvg) mapSvg.innerHTML='';
   const mapLegend=document.getElementById('mapLegend'); if(mapLegend) mapLegend.innerHTML='';
-  document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">🎭</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
-  document.getElementById('chatView').innerHTML='<div class="chat-empty"><div style="font-size:36px;opacity:0.25">📖</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div></div>';
+  document.getElementById('storyPanel').innerHTML='<div class="story-empty"><div class="story-empty-icon">📖</div><div class="story-empty-text">Your story begins here</div><div class="story-empty-hint">Fill in the setup on the left, then click Start Story</div></div>';
+  document.getElementById('chatView').innerHTML='<div class="chat-empty"><div style="font-size:36px;opacity:0.25">🎭</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div></div>';
   document.getElementById('branchSection').style.display='none';
   document.getElementById('logMessages').innerHTML='<div class="log-empty">No dialogue yet.</div>';
   switchMainTab('chat');
