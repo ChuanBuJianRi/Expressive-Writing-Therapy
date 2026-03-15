@@ -126,25 +126,25 @@ def generate_character_action(
         + "Respond as your character to the current scene."
     )
 
-    response = chat_json(
-        messages=[
-            {"role": "system", "content": CHARACTER_ACTION_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.85,
-    )
-
+    _fallback_action = {
+        "public_action": f"{character['name']} stands quietly, observing everything around them.",
+        "private_thought": "I need a moment to understand what is happening here.",
+        "dialogue": "",
+        "emotional_state": "guarded",
+        "growth_moment": "",
+    }
     try:
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": CHARACTER_ACTION_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.85,
+        )
         data = json.loads(response)
-    except json.JSONDecodeError:
-        log.error("Failed to parse character action for '%s'", character["name"])
-        data = {
-            "public_action": f"{character['name']} stands quietly, observing everything around them.",
-            "private_thought": "I need a moment to understand what is happening here.",
-            "dialogue": "",
-            "emotional_state": "guarded",
-            "growth_moment": "",
-        }
+    except Exception as e:
+        log.warning("Character action failed for '%s': %s", character["name"], e)
+        data = _fallback_action
 
     action = CharacterAction(
         character_id=character["id"],

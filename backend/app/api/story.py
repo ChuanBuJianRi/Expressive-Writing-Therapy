@@ -249,6 +249,7 @@ def _chapter_stream(story, plan, chapter_index, user_input,
         user_choice=user_input,
         previous_context=_prev_prose(story),
         tension_threshold=tension_threshold,
+        total_chapters=len(story.chapters),
         relationships=relationships,
         end_chapter=end_with_this_chapter,
     )
@@ -264,225 +265,255 @@ def _chapter_stream(story, plan, chapter_index, user_input,
     scenes_generated: list[Scene] = []
     decision_scene_num = None
 
-    for scene_plan in scene_plans:
-        yield _sse("progress", {
-            "step": "scene",
-            "message": f"Scene {scene_plan.scene_number}: {scene_plan.title}…",
-            "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60),
-            "tension": scene_plan.tension_level,
-            "scene_number": scene_plan.scene_number,
-            "scene_title": scene_plan.title,
-        })
-
-        # Filter relevant characters for this scene
-        involved_ids = scene_plan.involved_characters
-        if involved_ids:
-            scene_chars = [c for c in all_chars if c["id"] in involved_ids]
-            if not scene_chars:
-                scene_chars = all_chars
-        else:
-            scene_chars = all_chars
-
-        # ── Phase 1: Director gathers private intel ──
-        yield _sse("log", {
-            "sender": "🔍 Director",
-            "cls": "director",
-            "text": f"Querying private states for scene {scene_plan.scene_number}…",
-        })
-
-        private_intel = gather_all_private_states(
-            characters=scene_chars,
-            scene_description=scene_plan.description,
-            story_context=_prev_prose(story, 400),
-        )
-
-        for char_id, intel in private_intel.items():
-            char_name = intel.get("name", char_id)
-            yield _sse("log", {
-                "sender": f"🔒 {char_name}",
-                "cls": f"char-{char_id}",
-                "text": f"[Private → Director] {intel.get('private_state', '')}",
+    try:
+        for scene_plan in scene_plans:
+            yield _sse("progress", {
+                "step": "scene",
+                "message": f"Scene {scene_plan.scene_number}: {scene_plan.title}…",
+                "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60),
+                "tension": scene_plan.tension_level,
+                "scene_number": scene_plan.scene_number,
+                "scene_title": scene_plan.title,
             })
 
-        # ── Phase 2: Director issues instructions ──
-        directions = direct_scene(
-            world_config=story.world_config,
-            characters=scene_chars,
-            scene_plan=scene_plan,
-            private_intel=private_intel,
-            previous_context=_prev_prose(story, 400),
-            chapter_number=chapter_num,
-            total_chapters=len(story.chapters),
-            relationships=relationships,
-        )
+            try:
+                # Filter relevant characters for this scene
+                involved_ids = scene_plan.involved_characters
+                if involved_ids:
+                    scene_chars = [c for c in all_chars if c["id"] in involved_ids]
+                    if not scene_chars:
+                        scene_chars = all_chars
+                else:
+                    scene_chars = all_chars
 
-        yield _sse("log", {
-            "sender": "🎬 Director",
-            "cls": "director",
-            "text": directions.get("tension_driver", "Directions issued."),
-        })
-
-        # ── Stage narrator (conditional) ──
-        is_first_scene = scene_plan.scene_number == 1
-        show_narration = is_first_scene or directions.get("show_stage_direction", True)
-        if show_narration:
-            if is_first_scene:
-                narrator_text = directions.get("scene_setup", scene_plan.description)
-                atmo = directions.get("atmosphere", "")
-            else:
-                narrator_text = directions.get("stage_direction", "")
-                atmo = ""
-            if narrator_text.strip():
-                yield _sse("chat_narrator", {
-                    "scene_number": scene_plan.scene_number,
-                    "scene_title": scene_plan.title,
-                    "scene_setup": narrator_text,
-                    "atmosphere": atmo,
-                    "tension_level": scene_plan.tension_level,
+                # ── Phase 1: Director gathers private intel ──
+                yield _sse("log", {
+                    "sender": "🔍 Director",
+                    "cls": "director",
+                    "text": f"Querying private states for scene {scene_plan.scene_number}…",
                 })
 
-        # ── Character actions (multi-round dialogue) ──
-        actions = []
-        public_actions = []
-        char_instructions = directions.get("character_instructions", {})
-        target_exchanges = 8
-        num_rounds = max(2, (target_exchanges + len(scene_chars) - 1) // len(scene_chars))
-
-        for round_num in range(1, num_rounds + 1):
-            for i, char in enumerate(scene_chars):
-                char_id = char.get("id", str(i))
-                instruction = char_instructions.get(char_id, {
-                    "private_instruction": "Follow your instincts and express your character fully.",
-                    "emotional_goal": "Show your authentic self.",
-                    "action_hint": "React naturally to the scene.",
-                    "interaction_target": "Those around you",
-                })
-
-                action = generate_character_action(
-                    character=char,
-                    world_config=story.world_config,
-                    director_instruction=instruction,
-                    scene_setting=directions.get("scene_setup", scene_plan.description),
-                    other_characters_public=public_actions,
-                    scene_tension=scene_plan.tension_level,
-                    round_number=round_num,
-                    total_rounds=num_rounds,
+                private_intel = gather_all_private_states(
+                    characters=scene_chars,
+                    scene_description=scene_plan.description,
+                    story_context=_prev_prose(story, 400),
                 )
-                actions.append(action)
-                public_actions.append({
-                    "name": char["name"],
-                    "public_action": action.public_action,
-                    "dialogue": action.dialogue,
-                })
 
-                # Only store memory once per scene per character (first round)
-                if round_num == 1:
-                    char.setdefault("memory", []).append({
-                        "chapter": chapter_num,
-                        "scene": scene_plan.scene_number,
-                        "public_action": action.public_action,
-                        "private_thought": action.private_thought,
+                for char_id, intel in private_intel.items():
+                    char_name = intel.get("name", char_id)
+                    yield _sse("log", {
+                        "sender": f"🔒 {char_name}",
+                        "cls": f"char-{char_id}",
+                        "text": f"[Private → Director] {intel.get('private_state', '')}",
                     })
 
-                display_text = action.dialogue if action.dialogue else action.public_action
+                # ── Phase 2: Director issues instructions ──
+                directions = direct_scene(
+                    world_config=story.world_config,
+                    characters=scene_chars,
+                    scene_plan=scene_plan,
+                    private_intel=private_intel,
+                    previous_context=_prev_prose(story, 400),
+                    chapter_number=chapter_num,
+                    total_chapters=len(story.chapters),
+                    relationships=relationships,
+                )
+
                 yield _sse("log", {
-                    "sender": f"🎭 {char['name']}",
-                    "cls": f"char-{char_id}",
-                    "text": display_text,
+                    "sender": "🎬 Director",
+                    "cls": "director",
+                    "text": directions.get("tension_driver", "Directions issued."),
                 })
 
-                yield _sse("chat_action", {
+                # ── Stage narrator (conditional) ──
+                is_first_scene = scene_plan.scene_number == 1
+                show_narration = is_first_scene or directions.get("show_stage_direction", True)
+                if show_narration:
+                    if is_first_scene:
+                        narrator_text = directions.get("scene_setup", scene_plan.description)
+                        atmo = directions.get("atmosphere", "")
+                    else:
+                        narrator_text = directions.get("stage_direction", "")
+                        atmo = ""
+                    if narrator_text.strip():
+                        yield _sse("chat_narrator", {
+                            "scene_number": scene_plan.scene_number,
+                            "scene_title": scene_plan.title,
+                            "scene_setup": narrator_text,
+                            "atmosphere": atmo,
+                            "tension_level": scene_plan.tension_level,
+                        })
+
+                # ── Character actions (multi-round dialogue) ──
+                actions = []
+                public_actions = []
+                char_instructions = directions.get("character_instructions", {})
+                target_exchanges = 4
+                num_rounds = max(1, (target_exchanges + len(scene_chars) - 1) // len(scene_chars))
+
+                for round_num in range(1, num_rounds + 1):
+                    for i, char in enumerate(scene_chars):
+                        char_id = char.get("id", str(i))
+                        instruction = char_instructions.get(char_id, {
+                            "private_instruction": "Follow your instincts and express your character fully.",
+                            "emotional_goal": "Show your authentic self.",
+                            "action_hint": "React naturally to the scene.",
+                            "interaction_target": "Those around you",
+                        })
+
+                        action = generate_character_action(
+                            character=char,
+                            world_config=story.world_config,
+                            director_instruction=instruction,
+                            scene_setting=directions.get("scene_setup", scene_plan.description),
+                            other_characters_public=public_actions,
+                            scene_tension=scene_plan.tension_level,
+                            round_number=round_num,
+                            total_rounds=num_rounds,
+                        )
+                        actions.append(action)
+                        public_actions.append({
+                            "name": char["name"],
+                            "public_action": action.public_action,
+                            "dialogue": action.dialogue,
+                        })
+
+                        # Only store memory once per scene per character (first round)
+                        if round_num == 1:
+                            char.setdefault("memory", []).append({
+                                "chapter": chapter_num,
+                                "scene": scene_plan.scene_number,
+                                "public_action": action.public_action,
+                                "private_thought": action.private_thought,
+                            })
+
+                        display_text = action.dialogue if action.dialogue else action.public_action
+                        yield _sse("log", {
+                            "sender": f"🎭 {char['name']}",
+                            "cls": f"char-{char_id}",
+                            "text": display_text,
+                        })
+
+                        yield _sse("chat_action", {
+                            "scene_number": scene_plan.scene_number,
+                            "character_id": char.get("id", str(i)),
+                            "character_name": char["name"],
+                            "character_color": char.get("color", "blue"),
+                            "character_avatar": char.get("avatar", ""),
+                            "public_action": action.public_action,
+                            "private_thought": action.private_thought,
+                            "dialogue": action.dialogue,
+                            "emotional_state": action.emotional_state,
+                            "growth_moment": action.growth_moment,
+                        })
+
+                # ── Compose scene prose ──
+                yield _sse("progress", {
+                    "step": "composing",
+                    "message": f"Writing scene {scene_plan.scene_number}…",
+                    "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60) + 10,
+                    "tension": scene_plan.tension_level,
+                })
+
+                prose = compose_scene(
+                    scene_plan=scene_plan,
+                    scene_setup=directions.get("scene_setup", ""),
+                    atmosphere=directions.get("atmosphere", ""),
+                    character_actions=actions,
+                    world_config=story.world_config,
+                    chapter_number=chapter_num,
+                    therapeutic_intention=directions.get("therapeutic_intention", ""),
+                    chapter_length_hint=chapter_length_hint,
+                    is_decision_point=scene_plan.is_decision_point,
+                )
+
+                scene = Scene(
+                    scene_number=scene_plan.scene_number,
+                    title=scene_plan.title,
+                    prose=prose,
+                    tension_level=scene_plan.tension_level,
+                    is_decision_point=scene_plan.is_decision_point,
+                    character_actions=actions,
+                )
+                scenes_generated.append(scene)
+
+                # Emit scene prose
+                yield _sse("scene", {
                     "scene_number": scene_plan.scene_number,
-                    "character_id": char.get("id", str(i)),
-                    "character_name": char["name"],
-                    "character_color": char.get("color", "blue"),
-                    "character_avatar": char.get("avatar", ""),
-                    "public_action": action.public_action,
-                    "private_thought": action.private_thought,
-                    "dialogue": action.dialogue,
-                    "emotional_state": action.emotional_state,
-                    "growth_moment": action.growth_moment,
+                    "scene_title": scene_plan.title,
+                    "prose": prose,
+                    "tension_level": scene_plan.tension_level,
+                    "is_decision_point": scene_plan.is_decision_point,
                 })
 
-        # ── Compose scene prose ──
-        yield _sse("progress", {
-            "step": "composing",
-            "message": f"Writing scene {scene_plan.scene_number}…",
-            "progress": 5 + int(scene_plan.scene_number / len(scene_plans) * 60) + 10,
-            "tension": scene_plan.tension_level,
+                # Stop at decision point
+                if scene_plan.is_decision_point:
+                    decision_scene_num = scene_plan.scene_number
+                    log.info("Decision point reached at scene %d (tension=%.2f)",
+                             scene_plan.scene_number, scene_plan.tension_level)
+                    break
+
+            except Exception as scene_err:
+                log.error("Scene %d generation failed: %s", scene_plan.scene_number, scene_err, exc_info=True)
+                yield _sse("log", {
+                    "sender": "⚠ System",
+                    "cls": "safety",
+                    "text": f"Scene {scene_plan.scene_number} error (skipping): {scene_err}",
+                })
+                # If this was the last planned scene or a decision point scene, treat it as a decision point
+                if scene_plan.is_decision_point or scene_plan.scene_number == len(scene_plans):
+                    decision_scene_num = scene_plan.scene_number if scenes_generated else None
+                    break
+                # Otherwise continue to next scene
+                continue
+
+    except Exception as fatal_err:
+        log.error("Chapter stream fatal error: %s", fatal_err, exc_info=True)
+        yield _sse("log", {
+            "sender": "⚠ System",
+            "cls": "safety",
+            "text": f"Fatal error during generation: {fatal_err}",
         })
 
-        prose = compose_scene(
-            scene_plan=scene_plan,
-            scene_setup=directions.get("scene_setup", ""),
-            atmosphere=directions.get("atmosphere", ""),
-            character_actions=actions,
-            world_config=story.world_config,
+    # ── Safety check + chapter emit (always runs, even if scenes failed) ──
+    try:
+        yield _sse("progress", {"step": "safety", "message": "Safety check…", "progress": 88})
+        full_prose = "\n\n".join(s.prose for s in scenes_generated)
+        try:
+            safety_result = check_safety(full_prose) if full_prose else {"safety_score": 1.0, "therapeutic_score": 1.0, "therapeutic_score": 1.0, "recommendations": ""}
+        except Exception:
+            safety_result = {"safety_score": 1.0, "therapeutic_score": 1.0, "recommendations": ""}
+
+        yield _sse("log", {
+            "sender": "🛡 Safety",
+            "cls": "safety",
+            "text": f"Safety: {safety_result['safety_score']:.2f} · Therapeutic: {safety_result['therapeutic_score']:.2f}",
+        })
+
+        # ── Build chapter ──
+        chapter = Chapter(
             chapter_number=chapter_num,
-            therapeutic_intention=directions.get("therapeutic_intention", ""),
-            chapter_length_hint=chapter_length_hint,
-            is_decision_point=scene_plan.is_decision_point,
+            title=plan.title,
+            scenes=scenes_generated,
+            safety_score=safety_result.get("safety_score", 1.0),
+            therapeutic_notes=safety_result.get("recommendations", ""),
+            decision_scene=decision_scene_num,
         )
+        story.chapters.append(chapter)
+        story.status = "awaiting_choice" if decision_scene_num else "generating"
 
-        scene = Scene(
-            scene_number=scene_plan.scene_number,
-            title=scene_plan.title,
-            prose=prose,
-            tension_level=scene_plan.tension_level,
-            is_decision_point=scene_plan.is_decision_point,
-            character_actions=actions,
-        )
-        scenes_generated.append(scene)
-
-        # Emit scene prose
-        yield _sse("scene", {
-            "scene_number": scene_plan.scene_number,
-            "scene_title": scene_plan.title,
-            "prose": prose,
-            "tension_level": scene_plan.tension_level,
-            "is_decision_point": scene_plan.is_decision_point,
+        yield _sse("progress", {"step": "done", "message": "Done!", "progress": 100})
+        yield _sse("chapter", {
+            "chapter": chapter.to_dict(),
+            "chapter_number": chapter_num,
+            "safety": safety_result,
+            "status": story.status,
+            "decision_point": decision_scene_num is not None,
+            "scenes_generated": len(scenes_generated),
+            "is_final_chapter": end_with_this_chapter,
         })
-
-        # Stop at decision point
-        if scene_plan.is_decision_point:
-            decision_scene_num = scene_plan.scene_number
-            log.info("Decision point reached at scene %d (tension=%.2f)",
-                     scene_plan.scene_number, scene_plan.tension_level)
-            break
-
-    # ── Safety check on full chapter prose ──
-    yield _sse("progress", {"step": "safety", "message": "Safety check…", "progress": 88})
-    full_prose = "\n\n".join(s.prose for s in scenes_generated)
-    safety_result = check_safety(full_prose)
-
-    yield _sse("log", {
-        "sender": "🛡 Safety",
-        "cls": "safety",
-        "text": f"Safety: {safety_result['safety_score']:.2f} · Therapeutic: {safety_result['therapeutic_score']:.2f}",
-    })
-
-    # ── Build chapter ──
-    chapter = Chapter(
-        chapter_number=chapter_num,
-        title=plan.title,
-        scenes=scenes_generated,
-        safety_score=safety_result.get("safety_score", 1.0),
-        therapeutic_notes=safety_result.get("recommendations", ""),
-        decision_scene=decision_scene_num,
-    )
-    story.chapters.append(chapter)
-    story.status = "awaiting_choice" if decision_scene_num else "generating"
-
-    yield _sse("progress", {"step": "done", "message": "Done!", "progress": 100})
-    yield _sse("chapter", {
-        "chapter": chapter.to_dict(),
-        "chapter_number": chapter_num,
-        "safety": safety_result,
-        "status": story.status,
-        "decision_point": decision_scene_num is not None,
-        "scenes_generated": len(scenes_generated),
-        "is_final_chapter": end_with_this_chapter,
-    })
+    except Exception as finish_err:
+        log.error("Chapter finalization error: %s", finish_err, exc_info=True)
 
 
 def _run_chapter_pipeline(story, plan, chapter_index, user_input,
@@ -501,6 +532,7 @@ def _run_chapter_pipeline(story, plan, chapter_index, user_input,
         user_choice=user_input,
         previous_context=_prev_prose(story),
         tension_threshold=tension_threshold,
+        total_chapters=len(story.chapters),
         relationships=relationships,
         end_chapter=end_with_this_chapter,
     )

@@ -1577,8 +1577,8 @@
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" id="tabChat"     onclick="switchMainTab('chat')">🎭 Stage</button>
-      <button class="tab-btn"        id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
+      <button class="tab-btn active" id="tabStory"    onclick="switchMainTab('story')">📖 Story</button>
+      <button class="tab-btn"        id="tabChat"     onclick="switchMainTab('chat')">🎭 Stage</button>
       <button class="tab-btn"        id="tabTree"     onclick="switchMainTab('tree')">🌿 Story Tree</button>
       <button class="tab-btn"        id="tabLog"      onclick="switchMainTab('log')">📋 Agent Log</button>
       <button class="tab-btn"        id="tabMap"      onclick="switchMainTab('map')">🗺 World Map</button>
@@ -1594,17 +1594,7 @@
     <!-- Story tab -->
     <div class="story-content">
 
-      <!-- Chat (dialogue) tab -->
-      <div class="tab-panel active" id="panelChat">
-        <div class="chat-view" id="chatView">
-          <div class="chat-empty">
-            <div style="font-size:36px;opacity:0.25">🎭</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="panelStory">
+      <div class="tab-panel active" id="panelStory">
 
         <!-- Chapter prose -->
         <div id="storyPanel">
@@ -1674,6 +1664,16 @@
         </div>
 
       </div><!-- /panelStory -->
+
+      <!-- Chat (dialogue) tab -->
+      <div class="tab-panel" id="panelChat">
+        <div class="chat-view" id="chatView">
+          <div class="chat-empty">
+            <div style="font-size:36px;opacity:0.25">🎭</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:8px">The stage awaits — start a story to watch the characters interact</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Agent log tab -->
       <div class="tab-panel" id="panelLog">
@@ -3979,7 +3979,7 @@ async function startStory() {
   document.getElementById('chatView').innerHTML='';
   document.getElementById('progressWrap').classList.add('visible');
   setProgress(0,'Building story world…');
-  switchMainTab('chat');
+  switchMainTab('story');
 
   const chapterLengthHint = document.getElementById('chapterLength').value || 'medium';
   const tags=[...document.querySelectorAll('.chip.active')].map(c=>c.textContent.trim());
@@ -4014,6 +4014,13 @@ async function startStory() {
 async function generateNextChapter(choiceTitle, choiceDesc) {
   if(!currentSessionId) return;
   const nextChap = chapterCount + 1;
+  // Auto-carry cast from previous chapter if not set
+  if (getCast(nextChap).length === 0 && chapterCount > 0) {
+    const prevCast = getCast(chapterCount);
+    if (prevCast.length > 0) {
+      chapterCasts[nextChap] = [...prevCast];
+    }
+  }
   // Gate: cast must be populated before generation
   if (getCast(nextChap).length === 0) {
     showToast(`Drag at least one character into the Chapter ${nextChap} Cast first`, 'error');

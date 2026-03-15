@@ -118,14 +118,21 @@ def compose_scene(
         f"Output only the scene prose — no titles, no headings, no commentary."
     )
 
-    prose = chat(
-        messages=[
-            {"role": "system", "content": COMPOSER_SYSTEM_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.88,
-        max_tokens=max_tokens,
-    )
+    try:
+        prose = chat(
+            messages=[
+                {"role": "system", "content": COMPOSER_SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.88,
+            max_tokens=max_tokens,
+        )
+    except Exception as e:
+        log.error("compose_scene LLM call failed for scene %d: %s", scene_plan.scene_number, e)
+        prose = (
+            f"[Scene {scene_plan.scene_number}: {scene_plan.title}] "
+            f"{scene_plan.description}"
+        )
 
     log.info("Scene %d composed: %d chars", scene_plan.scene_number, len(prose))
     return prose.strip()

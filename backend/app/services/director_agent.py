@@ -58,6 +58,15 @@ def _arc_stage(chapter_number: int, total_chapters_so_far: int) -> tuple[str, st
 
 SCENE_PLANNER_PROMPT = """You are a Master Director planning a sequence of scenes.
 
+━━━━  CRITICAL STRUCTURE REQUIREMENT  ━━━━
+You MUST plan EXACTLY 3 scenes (no more, no fewer).
+Scene 1: LOW tension (0.15–0.35) — setup, anomaly, establish conflict seeds. is_decision_point = false.
+Scene 2: MEDIUM tension (0.40–0.65) — friction escalates, secrets start leaking. is_decision_point = false.
+Scene 3: HIGH tension (0.72–0.92) — confrontation or revelation peaks. This is the DECISION POINT. is_decision_point = true.
+
+Tension MUST escalate across all 3 scenes. Scene 3 tension MUST be higher than Scene 2, which MUST be higher than Scene 1.
+NEVER mark Scene 1 or Scene 2 as is_decision_point. The decision point is ALWAYS Scene 3.
+
 ━━━━  THE HARD EVENT RULE  ━━━━
 Every scene MUST contain at least ONE concrete, irreversible plot event — not just emotional atmosphere.
 A HARD EVENT is something that changes the world's state in a nameable way:
@@ -72,7 +81,7 @@ Name the event in the scene description. If you can't name it, it isn't a hard e
 - Tension rises through OPPOSITION — put characters' core desires in direct collision
 - Alternate ACTIVE scenes (confrontation, physical event) with REFLECTIVE scenes (quiet revelation after a blow)
 - Each scene ends on a question or an unresolved action, not a conclusion
-- The DECISION POINT must feel both inevitable and surprising — earned by prior events
+- The DECISION POINT (Scene 3) must feel both inevitable and surprising — earned by prior events
 
 Tension levels (0.0–1.0):
   0.0–0.3: ordinary world disrupted by a small, concrete anomaly
@@ -80,9 +89,7 @@ Tension levels (0.0–1.0):
   0.6–0.8: open confrontation or revelation; a concrete fact changes hands
   0.8–1.0: irreversible act; something breaks that cannot be unbroken
 
-Mark AT MOST ONE scene as is_decision_point = true. Tension must escalate to earn it.
-
-Output JSON:
+Output JSON (exactly 3 scenes, tension escalating, only scene 3 is decision point):
 {
   "scenes": [
     {
@@ -90,10 +97,30 @@ Output JSON:
       "title": "cinematically specific title — name the event, not the mood",
       "description": "NAME the hard event: what physically happens, what is revealed, what changes state",
       "hard_event": "one sentence: the specific irreversible thing that occurs in this scene",
-      "tension_level": 0.3,
+      "tension_level": 0.25,
       "is_decision_point": false,
       "involved_characters": ["char_id_1", "char_id_2"],
       "director_note": "what this scene's event sets up for the next scene"
+    },
+    {
+      "scene_number": 2,
+      "title": "...",
+      "description": "...",
+      "hard_event": "...",
+      "tension_level": 0.55,
+      "is_decision_point": false,
+      "involved_characters": ["char_id_1", "char_id_2"],
+      "director_note": "..."
+    },
+    {
+      "scene_number": 3,
+      "title": "...",
+      "description": "...",
+      "hard_event": "...",
+      "tension_level": 0.82,
+      "is_decision_point": true,
+      "involved_characters": ["char_id_1", "char_id_2"],
+      "director_note": "..."
     }
   ]
 }
@@ -152,19 +179,18 @@ def plan_scenes(
         )
     )
 
-    response = chat_json(
-        messages=[
-            {"role": "system", "content": SCENE_PLANNER_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.75,
-    )
-
     try:
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": SCENE_PLANNER_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.75,
+        )
         data = json.loads(response)
         scenes_data = data.get("scenes", [])
-    except json.JSONDecodeError:
-        log.error("Scene plan parse failed, using defaults")
+    except Exception as e:
+        log.error("Scene plan failed: %s — using defaults", e)
         scenes_data = _default_scenes()
 
     plans = [
@@ -180,14 +206,37 @@ def plan_scenes(
         for i, s in enumerate(scenes_data)
     ]
 
-    # Ensure exactly one decision point exists at the highest tension scene (unless final chapter)
-    if not end_chapter and not any(p.is_decision_point for p in plans):
-        peak = max(plans, key=lambda p: p.tension_level)
-        if peak.tension_level >= tension_threshold:
-            peak.is_decision_point = True
-    if end_chapter:
-        for p in plans:
-            p.is_decision_point = False
+    # Guard: must have at least 3 scenes — pad with defaults if LLM returned fewer
+    defaults = _default_scenes()
+    while len(plans) < 3:
+        idx = len(plans)
+        d = defaults[idx] if idx < len(defaults) else defaults[-1]
+        plans.append(ScenePlan(
+            scene_number=idx + 1,
+            title=d["title"],
+            description=d["description"],
+            tension_level=d["tension_level"],
+            is_decision_point=d["is_decision_point"],
+            involved_characters=d.get("involved_characters", []),
+            hard_event=d.get("hard_event", ""),
+        ))
+        log.warning("Scene plan too short — appended default scene %d", idx + 1)
+
+    # Re-number scenes sequentially in case LLM returned wrong numbers
+    for i, p in enumerate(plans):
+        p.scene_number = i + 1
+
+    # Enforce tension escalation: each scene must be higher than the previous
+    for i in range(1, len(plans)):
+        if plans[i].tension_level <= plans[i - 1].tension_level:
+            plans[i].tension_level = min(0.95, plans[i - 1].tension_level + 0.20)
+
+    # Decision point is ALWAYS the last scene (and only the last scene)
+    for p in plans:
+        p.is_decision_point = False
+    if not end_chapter:
+        plans[-1].is_decision_point = True
+        plans[-1].tension_level = max(plans[-1].tension_level, tension_threshold + 0.05)
 
     log.info(
         "Scenes planned: %d | Arc: %s | Decision at scene: %s",
@@ -242,26 +291,31 @@ def query_character_private_state(
         + "The Director asks: What is truly happening inside you right now?"
     )
 
-    response = chat_json(
-        messages=[
-            {"role": "system", "content": PRIVATE_QUERY_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.88,
-    )
+    _fallback_private = {
+        "private_state": "Something is shifting inside, though I can't name it yet.",
+        "core_desire": "To be truly seen.",
+        "core_fear": "That I am fundamentally unlovable.",
+        "secret": "none",
+        "wound": "An old loss I never fully grieved.",
+        "relationship_map": "Complex feelings toward everyone here.",
+        "what_you_would_never_say": "I need help.",
+    }
+    try:
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": PRIVATE_QUERY_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.88,
+        )
+    except Exception as e:
+        log.warning("Private state query failed for '%s': %s", character["name"], e)
+        return _fallback_private
 
     try:
         return json.loads(response)
-    except json.JSONDecodeError:
-        return {
-            "private_state": "Something is shifting inside, though I can't name it yet.",
-            "core_desire": "To be truly seen.",
-            "core_fear": "That I am fundamentally unlovable.",
-            "secret": "none",
-            "wound": "An old loss I never fully grieved.",
-            "relationship_map": "Complex feelings toward everyone here.",
-            "what_you_would_never_say": "I need help.",
-        }
+    except (json.JSONDecodeError, Exception):
+        return _fallback_private
 
 
 def gather_all_private_states(
@@ -404,18 +458,17 @@ def direct_scene(
           "create maximum dramatic truth. Let asymmetric feelings create subtext and tension."
     )
 
-    response = chat_json(
-        messages=[
-            {"role": "system", "content": DIRECTOR_SYSTEM_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.80,
-    )
-
     try:
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": DIRECTOR_SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.80,
+        )
         directions = json.loads(response)
-    except json.JSONDecodeError:
-        log.error("Director parse failed for scene %d", scene_plan.scene_number)
+    except Exception as e:
+        log.error("Director scene direction failed for scene %d: %s", scene_plan.scene_number, e)
         directions = _fallback_directions(characters, scene_plan)
 
     log.info(

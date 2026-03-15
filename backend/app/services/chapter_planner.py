@@ -132,27 +132,27 @@ def extend_story(
         f"Plan chapter {next_chapter_number} based on the user's choice."
     )
 
-    response = chat_json(
-        messages=[
-            {"role": "system", "content": EXTEND_CHAPTER_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.8,
-    )
-
+    _fallback_data = {
+        "chapter_number": next_chapter_number,
+        "title": f"Chapter {next_chapter_number}",
+        "summary": user_choice[:200],
+        "conflict_level": 0.5,
+        "despair_level": 0.3,
+        "key_events": ["The story unfolds", "Characters face the consequences of their choice"],
+    }
     try:
+        response = chat_json(
+            messages=[
+                {"role": "system", "content": EXTEND_CHAPTER_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.8,
+        )
         data = json.loads(response)
         data.setdefault("chapter_number", next_chapter_number)
-    except json.JSONDecodeError:
-        log.error("Failed to parse extend_story response, using fallback")
-        data = {
-            "chapter_number": next_chapter_number,
-            "title": f"Chapter {next_chapter_number}",
-            "summary": user_choice[:200],
-            "conflict_level": 0.5,
-            "despair_level": 0.3,
-            "key_events": ["The story unfolds", "Characters face the consequences of their choice"],
-        }
+    except Exception as e:
+        log.error("extend_story failed: %s — using fallback plan", e)
+        data = _fallback_data
 
     plan = ChapterPlan(
         chapter_number=data["chapter_number"],
