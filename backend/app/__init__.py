@@ -1,15 +1,21 @@
 """Flask application factory."""
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 
+FRONTEND_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "index.html")
+
 
 def create_app():
     app = Flask(__name__)
     CORS(app)
+
+    @app.route("/")
+    def index():
+        return send_file(os.path.abspath(FRONTEND_PATH))
 
     # Register blueprints
     from app.api.story import story_bp
