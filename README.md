@@ -43,6 +43,13 @@ Expressive-Writing-Therapy/
 
 ---
 
+## 🌐 Live Demo
+
+- **Frontend**: [https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html)
+- **Backend API**: [https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud](https://story-forge.27hq7x0nnc07.ca-tor.codeengine.appdomain.cloud)
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -53,7 +60,15 @@ Expressive-Writing-Therapy/
 
 ---
 
-### 1. Clone the repository
+### Option A: Use the live deployment
+
+Visit the [live demo](https://s3.ca-tor.cloud-object-storage.appdomain.cloud/expressive-writing-frontend/index.html) — no installation required. Configure your API key on first launch and start creating.
+
+---
+
+### Option B: Run locally
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/ChuanBuJianRi/Expressive-Writing-Therapy.git
@@ -62,7 +77,7 @@ cd Expressive-Writing-Therapy
 
 ---
 
-### 2. Start the backend
+#### 2. Start the backend
 
 ```bash
 cd backend
@@ -81,6 +96,8 @@ python run.py
 
 The backend runs at **http://localhost:5001**. Keep this terminal open while using the app.
 
+> **Note:** When running locally, update `API_BASE` in `index.html` to `http://localhost:5001`.
+
 > **Every time you restart your machine**, run this to start the backend again:
 > ```bash
 > cd backend && source venv/bin/activate && python run.py
@@ -88,7 +105,7 @@ The backend runs at **http://localhost:5001**. Keep this terminal open while usi
 
 ---
 
-### 3. Open the frontend
+#### 3. Open the frontend
 
 Open `index.html` directly in your browser — no build step or local server required:
 
@@ -101,7 +118,7 @@ open index.html
 
 ---
 
-### 4. Configure your AI provider
+#### 4. Configure your AI provider
 
 On first launch, a setup modal will appear automatically:
 
@@ -147,9 +164,10 @@ Your settings are saved locally in `localStorage` and synced to the backend on e
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla HTML / CSS / JS (no framework) |
-| Backend | Python · Flask · Flask-CORS |
+| Backend | Python · Flask · Flask-CORS · Gunicorn |
 | Streaming | Server-Sent Events (SSE) |
 | LLM | OpenAI SDK (compatible with Anthropic & Google via base_url) |
+| Hosting | IBM Cloud Object Storage (frontend) · IBM Code Engine (backend) |
 | State | In-memory session store + localStorage |
 
 ---
