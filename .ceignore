@@ -1,0 +1,9 @@
+.git
+.claude
+.env
+*.md
+*.pyc
+**/__pycache__
+**/venv
+**/.venv
+node_modules
