@@ -25,6 +25,7 @@ class ScenePlan:
     tension_level: float = 0.4  # 0.0 (calm) → 1.0 (crisis peak)
     is_decision_point: bool = False  # should user choose here?
     involved_characters: list[str] = field(default_factory=list)  # character ids
+    hard_event: str = ""        # the concrete irreversible event that must occur
 
     def to_dict(self) -> dict:
         return asdict(self)

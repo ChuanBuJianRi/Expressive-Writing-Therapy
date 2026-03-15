@@ -58,32 +58,42 @@ def _arc_stage(chapter_number: int, total_chapters_so_far: int) -> tuple[str, st
 
 SCENE_PLANNER_PROMPT = """You are a Master Director planning a sequence of scenes.
 
-Your cinematic instincts:
-- Tension rises through OPPOSITION — put characters' desires in direct conflict
-- Scenes alternate between ACTIVE (confrontation, action) and REFLECTIVE (quiet revelation)
-- Each scene must end with a question, not an answer
-- The DECISION POINT scene must feel inevitable and yet still surprise
+━━━━  THE HARD EVENT RULE  ━━━━
+Every scene MUST contain at least ONE concrete, irreversible plot event — not just emotional atmosphere.
+A HARD EVENT is something that changes the world's state in a nameable way:
+  ✓  A letter is opened and an identity is exposed
+  ✓  A character touches an artifact and a seal cracks open
+  ✓  A weapon is drawn and a threshold is crossed
+  ✗  "The tension between them grew" (atmosphere, not event)
+  ✗  "Memories surfaced" (vague — name the specific memory and what it reveals)
+Name the event in the scene description. If you can't name it, it isn't a hard event.
 
-Plan 3–5 scenes. Tension levels (0.0–1.0):
-  0.0–0.3: quiet / reflective / world-building
-  0.3–0.6: rising friction / subtext / unspoken tension
-  0.6–0.8: open conflict / revelation / confrontation
-  0.8–1.0: crisis / irreversible moment / emotional peak
+━━━━  SCENE STRUCTURE  ━━━━
+- Tension rises through OPPOSITION — put characters' core desires in direct collision
+- Alternate ACTIVE scenes (confrontation, physical event) with REFLECTIVE scenes (quiet revelation after a blow)
+- Each scene ends on a question or an unresolved action, not a conclusion
+- The DECISION POINT must feel both inevitable and surprising — earned by prior events
 
-Mark AT MOST ONE scene as is_decision_point = true (the dramatic peak where story pauses for user choice).
-Tension must EARN the decision point — don't peak at scene 1.
+Tension levels (0.0–1.0):
+  0.0–0.3: ordinary world disrupted by a small, concrete anomaly
+  0.3–0.6: rising friction; at least one secret starts leaking through action
+  0.6–0.8: open confrontation or revelation; a concrete fact changes hands
+  0.8–1.0: irreversible act; something breaks that cannot be unbroken
+
+Mark AT MOST ONE scene as is_decision_point = true. Tension must escalate to earn it.
 
 Output JSON:
 {
   "scenes": [
     {
       "scene_number": 1,
-      "title": "cinematically evocative title",
-      "description": "what HAPPENS in this scene — specific events, not atmosphere",
+      "title": "cinematically specific title — name the event, not the mood",
+      "description": "NAME the hard event: what physically happens, what is revealed, what changes state",
+      "hard_event": "one sentence: the specific irreversible thing that occurs in this scene",
       "tension_level": 0.3,
       "is_decision_point": false,
       "involved_characters": ["char_id_1", "char_id_2"],
-      "director_note": "the specific dramatic purpose this scene serves in the arc"
+      "director_note": "what this scene's event sets up for the next scene"
     }
   ]
 }
@@ -159,6 +169,7 @@ def plan_scenes(
             tension_level=float(s.get("tension_level", 0.4)),
             is_decision_point=bool(s.get("is_decision_point", False)),
             involved_characters=s.get("involved_characters", []),
+            hard_event=s.get("hard_event", ""),
         )
         for i, s in enumerate(scenes_data)
     ]
@@ -362,9 +373,14 @@ def direct_scene(
 
     rel_block = _fmt_relationships(relationships or [])
 
+    hard_event_note = (
+        f"\nMandatory hard event for this scene: {scene_plan.hard_event}"
+        if scene_plan.hard_event else ""
+    )
+
     user_msg = (
         f"Scene: {scene_plan.scene_number} — '{scene_plan.title}'\n"
-        f"Description: {scene_plan.description}\n"
+        f"Description: {scene_plan.description}{hard_event_note}\n"
         f"Target Tension: {scene_plan.tension_level:.0%}\n"
         f"Arc Stage: {arc_stage} — {arc_note}"
         f"{decision_note}\n\n"
