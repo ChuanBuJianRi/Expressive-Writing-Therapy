@@ -2014,7 +2014,25 @@ async function saveSetup() {
   closeSetup();
 }
 function updateProviderStatus() { if(!setupConfig) return; document.getElementById('providerStatus').style.display=''; document.getElementById('providerStatusText').textContent=setupConfig.model||setupConfig.provider; }
-function initSetup() { loadConfig(); if(!setupConfig||!setupConfig.api_key){document.getElementById('setupOverlay').classList.remove('hidden');}else{updateProviderStatus();fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(setupConfig)}).catch(()=>{});} }
+async function initSetup() {
+  loadConfig();
+  if(setupConfig && setupConfig.api_key) {
+    updateProviderStatus();
+    fetch(`${API_BASE}/api/config/llm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(setupConfig)}).catch(()=>{});
+    return;
+  }
+  // No local config — check if backend already has an API key configured (e.g. via env vars)
+  try {
+    const r = await fetch(`${API_BASE}/api/config/llm`);
+    const cfg = await r.json();
+    if(cfg.configured) {
+      setupConfig = { provider: 'openai', model: cfg.model, api_key: '(server)' };
+      updateProviderStatus();
+      return;
+    }
+  } catch(_){}
+  document.getElementById('setupOverlay').classList.remove('hidden');
+}
 
 /* ══════════════════════════════════════════
    Characters
