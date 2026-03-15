@@ -162,6 +162,7 @@ def generate_chapter():
     user_input = data.get("user_input", "")
     character_pool = data.get("character_pool")       # optional list of char IDs
     relationships   = data.get("relationships") or []  # [{fromId,toId,label,fromName,toName}]
+    end_with_this_chapter = data.get("end_with_this_chapter", False)
 
     story = _stories.get(session_id)
     if not story:
@@ -205,6 +206,7 @@ def generate_chapter():
                 chapter_length_hint, tension_threshold,
                 active_chars=active_chars,
                 relationships=relationships,
+                end_with_this_chapter=end_with_this_chapter,
             )),
             mimetype="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -214,6 +216,7 @@ def generate_chapter():
     chapter = _run_chapter_pipeline(
         story, plan, chapter_index, user_input, chapter_length_hint, tension_threshold,
         active_chars=active_chars, relationships=relationships,
+        end_with_this_chapter=end_with_this_chapter,
     )
     return jsonify({
         "chapter": chapter.to_dict(),
@@ -228,7 +231,8 @@ def generate_chapter():
 # ═══════════════════════════════════════════════════
 
 def _chapter_stream(story, plan, chapter_index, user_input,
-                    chapter_length_hint, tension_threshold, active_chars=None, relationships=None):
+                    chapter_length_hint, tension_threshold, active_chars=None, relationships=None,
+                    end_with_this_chapter=False):
     chapter_num = chapter_index + 1
     all_chars = active_chars if active_chars else story.all_characters
     relationships = relationships or []
@@ -245,13 +249,15 @@ def _chapter_stream(story, plan, chapter_index, user_input,
         previous_context=_prev_prose(story),
         tension_threshold=tension_threshold,
         relationships=relationships,
+        end_chapter=end_with_this_chapter,
     )
 
     yield _sse("log", {
         "sender": "🎬 Director",
         "cls": "director",
         "text": f"Planned {len(scene_plans)} scenes · decision point at scene "
-                + str(next((p.scene_number for p in scene_plans if p.is_decision_point), "none")),
+                + (str(next((p.scene_number for p in scene_plans if p.is_decision_point), "none"))
+                   if not end_with_this_chapter else "none (final chapter)"),
     })
 
     scenes_generated: list[Scene] = []
@@ -435,11 +441,13 @@ def _chapter_stream(story, plan, chapter_index, user_input,
         "status": story.status,
         "decision_point": decision_scene_num is not None,
         "scenes_generated": len(scenes_generated),
+        "is_final_chapter": end_with_this_chapter,
     })
 
 
 def _run_chapter_pipeline(story, plan, chapter_index, user_input,
-                           chapter_length_hint, tension_threshold, active_chars=None, relationships=None):
+                           chapter_length_hint, tension_threshold, active_chars=None, relationships=None,
+                           end_with_this_chapter=False):
     """Non-streaming chapter generation."""
     chapter_num = chapter_index + 1
     all_chars = active_chars if active_chars else story.all_characters
@@ -453,6 +461,8 @@ def _run_chapter_pipeline(story, plan, chapter_index, user_input,
         user_choice=user_input,
         previous_context=_prev_prose(story),
         tension_threshold=tension_threshold,
+        relationships=relationships,
+        end_chapter=end_with_this_chapter,
     )
 
     scenes_generated = []
@@ -665,6 +675,27 @@ def suggest():
     data = request.get_json() or {}
     suggest_type = data.get("type", "title")
     context = data.get("context", "")
+    num_initial = min(10, max(2, int(data.get("num", 3))))
+
+    def _initial_characters_prompt(n: int):
+        return (
+            f"Story context (world / theme): {context}\n\n"
+            f"Design exactly {n} initial characters for this story. "
+            "Each character must have:\n"
+            "- A distinct role (e.g. Protagonist, Mentor, Rival, Ally)\n"
+            "- Personality and traits that fit the world\n"
+            "- A short background and a hidden secret\n\n"
+            "Assign each character exactly one cast_type:\n"
+            "- protagonist: main character (one only)\n"
+            "- supporting: supporting role\n"
+            "- pivotal: driving/pivotal for plot\n"
+            "- extra: minor/extra\n"
+            "You must have exactly ONE protagonist; the rest use supporting, pivotal, or extra.\n\n"
+            'Return JSON: {"characters": [\n'
+            '  {"name": "...", "role": "...", "personality": "...", "background": "...", "secrets": "...", "cast_type": "protagonist"|"supporting"|"pivotal"|"extra"}\n'
+            ']}\n'
+            "Respond ONLY with valid JSON."
+        )
 
     prompts = {
         "title": (
@@ -706,9 +737,13 @@ def suggest():
             ']}\n'
             "Respond ONLY with JSON."
         ),
+        "initial_characters": _initial_characters_prompt(num_initial),
     }
 
     try:
+        if suggest_type == "initial_characters":
+            result = chat_json([{"role": "user", "content": _initial_characters_prompt(num_initial)}], temperature=0.9)
+            return jsonify(json.loads(result))
         result = chat_json([{"role": "user", "content": prompts.get(suggest_type, prompts["title"])}], temperature=0.9)
         return jsonify(json.loads(result))
     except Exception as e:

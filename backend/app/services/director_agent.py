@@ -118,6 +118,7 @@ def plan_scenes(
     tension_threshold: float = 0.72,
     total_chapters: int = 1,
     relationships: list[dict] | None = None,
+    end_chapter: bool = False,
 ) -> list[ScenePlan]:
     """Director plans scenes for the next story segment with dramatic arc awareness."""
     arc_stage, arc_note = _arc_stage(chapter_number, total_chapters)
@@ -144,6 +145,11 @@ def plan_scenes(
         + "Plan the scenes. Remember: OPPOSITION drives drama. "
           "Let the relationship tensions create unavoidable collision points. "
           "Put characters' hidden needs and their feelings toward each other on a collision course."
+        + (
+            "\n\n⚠️ CRITICAL — FINAL CHAPTER: This is the last chapter. The story must CONCLUDE here. "
+            "Resolve arcs, bring closure, and give a satisfying ending. Do NOT set is_decision_point to true for any scene — there is no next branch."
+            if end_chapter else ""
+        )
     )
 
     response = chat_json(
@@ -174,11 +180,14 @@ def plan_scenes(
         for i, s in enumerate(scenes_data)
     ]
 
-    # Ensure exactly one decision point exists at the highest tension scene
-    if not any(p.is_decision_point for p in plans):
+    # Ensure exactly one decision point exists at the highest tension scene (unless final chapter)
+    if not end_chapter and not any(p.is_decision_point for p in plans):
         peak = max(plans, key=lambda p: p.tension_level)
         if peak.tension_level >= tension_threshold:
             peak.is_decision_point = True
+    if end_chapter:
+        for p in plans:
+            p.is_decision_point = False
 
     log.info(
         "Scenes planned: %d | Arc: %s | Decision at scene: %s",
