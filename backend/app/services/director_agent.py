@@ -332,7 +332,9 @@ Output JSON:
   },
   "tension_driver": "the specific moment or revelation that ratchets tension",
   "what_must_remain_unsaid": "the central truth of the scene that cannot be spoken directly",
-  "therapeutic_intention": "what psychological truth this scene invites the reader to encounter"
+  "therapeutic_intention": "what psychological truth this scene invites the reader to encounter",
+  "stage_direction": "1-2 sentence narrator note describing the physical environment shift or important non-verbal moment audiences should notice (or empty string if the scene flows naturally from the previous one and no narration is needed)",
+  "show_stage_direction": true or false — "set to false if the scene continues smoothly and no narrator interruption is needed; true only when the environment changes significantly or a dramatic pause/shift must be called out"
 }
 Respond ONLY with JSON."""
 
